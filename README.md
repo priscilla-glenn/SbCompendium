@@ -38,9 +38,9 @@ In Rstudio, once the repo is cloned: change the path to the folder where you clo
 library(SbCompendium)
 
 # How to load the compendium and an example dataset
-data("sorghum_compendium")
+data("example_data")
 
-experiment <- importTable(sorghum_compendium[["cle_33"]])
+experiment <- importTable(example_data[["nodal_buds_28"]])
 
 head(experiment)
 
