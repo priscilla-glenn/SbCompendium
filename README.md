@@ -14,14 +14,35 @@ This package allows users to analyze expression data from the RNA-seq compendium
 - Exporting heatmap tables with optional annotations and clustering results
 
 ## Installation
-# Install from GitHub
-install.packages("remotes")
-remotes::install_github("priscilla-glenn/SbCompendium")
+### Git LFS Requirement for Large Files
+
+This repository includes large files tracked with **Git LFS**.  
+**Before cloning**, make sure Git LFS is installed:
+
+#### Install Git LFS
+- **Windows / macOS / Linux:**
+  - https://git-lfs.com/  
+- Or via command line:
+  - git lfs install
+
+## Clone the repo with LFS (cpmmand line)
+git clone https://github.com/priscilla-glenn/SbCompendium.git
+
+cd SbCompendium
+
+git lfs pull
+
+In Rstudio, once the repo is cloned: change the path to the folder where you cloned the repo
+- devtools::install_local("path/to/SbCompendium", build_vignettes = FALSE)
+
 library(SbCompendium)
 
 # How to load the compendium and an example dataset
-data("sorghum_compendium")
-experiment <- importTable(sorghum_compendium[["cle_33"]])
+data("example_data")
+
+experiment <- importTable(example_data[["nodal_buds_28"]])
+
 head(experiment)
+
 
 #Please check the vignette and manual to see full details and usage for each function
