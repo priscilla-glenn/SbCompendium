@@ -1,7 +1,7 @@
 Package: SbCompendium
 Type: Package
 Title: Contains RNAseq Compendium data and functions for analysis
-Version: 0.1.1
+Version: 1.1.1
 Authors@R: c(
     person(
       "Priscilla", "Doupnik",
