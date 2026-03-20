@@ -1,0 +1,39 @@
+Package: SbCompendium
+Type: Package
+Title: Contains RNAseq Compendium data and functions for analysis
+Version: 0.1.1
+Authors@R: c(
+    person(
+      "Priscilla", "Doupnik",
+      email = "Priscilla.Doupnik@ag.tamu.edu",
+      role = c("aut", "cre")),
+    person(
+        "Brian", "McKinley",
+        email = "Brian.McKinley@ag.tamu.edu",
+        role = "aut")
+  )
+Description: Compendium of Sorghum RNAseq data.
+    Contains the functions used for DEseq, UMAP, and KMeans.
+License: LGPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: 
+    R (>= 4.1.0)
+Suggests: knitr, rmarkdown, BiocStyle
+VignetteBuilder: knitr
+Imports: 
+    reticulate,
+    DESeq2,
+    S4Vectors,
+    matrixStats,
+    dplyr,
+    ggplot2,
+    tibble,
+    SummarizedExperiment,
+    factoextra,
+    umap,
+    stats,
+    utils
+biocViews: RNASeq, DifferentialExpression

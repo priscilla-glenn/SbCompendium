@@ -1,0 +1,334 @@
+---
+title: "SbCompendium: Example Workflow"
+author: "Priscilla Doupnik"
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{SbCompendium: Example Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+library(SbCompendium)
+library(reticulate)
+```
+
+
+# Introduction
+
+SbCompendium provides tools for analyzing sorghum RNA-seq datasets from the Mullet lab.
+This vignette walks through a complete example workflow using a small example dataset
+included with the package.
+
+This workflow covers:
+
+- Importing transcript-level data from the Mullet Sorghum RNA-seq datasets and aggregating transcripts to genes
+- UMAP quality control of sample relationships
+- Differential expression analysis using DESeq2
+- k-means clustering of expression patterns
+- Exporting heatmap tables with optional annotations and clustering results
+
+## Example dataset
+
+The package includes a small simulated RNA-seq dataset containing:
+
+- transcript IDs
+- replicate-level TPM expression
+- replicate-level count data
+- condition-level TPMmean expression
+
+This dataset is designed to work with all functions in the package.
+More details and options for each function can be found in the function's manual.
+
+```{r}
+data("example_data")
+```
+
+In this example, the compendium contains two tables: the TX08001 experimental table (nodal_buds_28) with reps from nodal root buds from Phytomers 7, 10, 15, and 21 and the annotation table (sorghum_gene_annotation table).
+
+```{r}
+list_compendium(example_data)
+```
+
+
+# Import transcript-level data as gene-level expression
+
+RNA-seq quantification files often contain transcript-level expression.
+The `importTable` function aggregates transcripts to gene-level values
+by summing expression across transcripts belonging to the same gene.
+
+```{r}
+gene_expr <- importTable(example_data[["nodal_buds_28"]])
+head(gene_expr)
+```
+
+
+# UMAP visualization
+
+`run_umap_tpm` can be used to visualize sample relationships using replicate-level TPM
+expression and determine if there are any outliers.
+In this example, each of the nodal root bud groups cluster near one another. 
+We can also easily seed that group 4, node 21 only has 2 reps instead of 3
+In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes
+```{r}
+um <- run_umap_tpm(gene_expr, n_neighbors = 3)
+
+#head(um$umap_df)
+
+plot_umap(um)
+```
+
+## Reorder Group labels if necessary
+
+Group ordering can be adjusted for plotting using `set_umap_group_order`.
+
+In this case, they are already correct, so let's put them in the wrong order and then fix it.
+```{r}
+#First print the group names:
+print_umap_groups(um)
+
+#then reorder them - #this is now the wrong order
+um2 <- set_umap_group_order(
+  um,
+c(
+  "TX08001_Nodal_Root_Bud_Node_10",
+  "TX08001_Nodal_Root_Bud_Node_15",
+  "TX08001_Nodal_Root_Bud_Node_7",
+  "TX08001_Nodal_Root_Bud_Node_21"
+)
+)
+
+plot_umap(um2)
+```
+lets reorder them properly now
+```{r}
+um2 <- set_umap_group_order(
+  um,
+c(
+  "TX08001_Nodal_Root_Bud_Node_7",
+  "TX08001_Nodal_Root_Bud_Node_10",
+  "TX08001_Nodal_Root_Bud_Node_15",
+  "TX08001_Nodal_Root_Bud_Node_21"
+)
+)
+
+plot_umap(um2)
+```
+
+
+# Build a DESeq2 object
+
+The `build_deseq` function constructs a DESeq2 dataset from the
+expression table.
+
+Genes can optionally be filtered using a TPM threshold.
+
+`dds_out` will include:
+- the DESeq2 object (dds)
+- a subset of expression values (subset_df)
+- column name helpers (tpm_cols, counts_cols)
+- grouping information (groups, sample_names, rep_counts)
+- sample_table used in DEseq analysis
+- colData used in DEseq analysis
+- chosen TPM threshold (TPM_thresh)
+
+```{r}
+dds_out <- build_deseq(
+  gene_expr,
+  TPM_thresh = 5,
+  run_deseq = TRUE
+)
+
+#inspect sample information
+dds_out$sample_table
+
+#number of replicates per condition
+dds_out$rep_counts
+```
+
+# Run a differential expression contrast
+
+## A single DESeq2 contrast
+The `run_contrast()` function runs a single DESeq2 contrast between two groups of the user's choice.
+
+If one does not wish to cluster the results into similar expression groups, then use the results, contrast$top_de, in the `build_heatmap` function and export that dataframe using the `write_heatmap_xlsx` function
+
+```{r}
+#find the group names
+
+contrast <- run_contrast(
+  dds_out$dds,
+  groupA = "TX08001_Nodal_Root_Bud_Node_7",
+  groupB = "TX08001_Nodal_Root_Bud_Node_21"
+)
+
+#Top differentially expressed genes:
+head(contrast$top_de)
+```
+
+## Run all pairwise contrasts
+
+The `run_all_pairwise_contrasts()` function computes DESeq2 results for all
+pairwise comparisons among condition levels.
+This step can take a while depending on how many total constrasts it must compute
+
+If one does not wish to cluster the results into similar expression groups, then use the results, pairwise$top_by_gene, in the `build_heatmap` function and export that data frame using the `write_heatmap_xlsx` function
+
+```{r}
+pairwise <- run_all_pairwise_contrasts(
+  dds_out$dds,
+  factor_name = "condition",
+  run_deseq = FALSE,   # already ran DESeq in build_deseq()
+  alpha = 0.05,
+  fc_thresh = 3,       # fold-change threshold (FC scale)
+  add_fc = TRUE,
+  filter_significant = TRUE
+)
+
+# show which contrasts were tested
+pairwise$contrasts
+
+# combined significant results (long format)
+head(pairwise$all_results)
+
+# per-gene "best" contrast summary
+head(pairwise$top_by_gene)
+```
+
+# Kmeans Clustering
+## Prepare expression data for clustering
+
+K-means clustering is typically performed using TPMmean expression values
+for the genes of interest.
+
+The `prepare_kmeans_matrix_topDE_TPMmean` function builds the expression
+matrix used for clustering.
+
+Either `pairwise$top_by_gene` or `contrast$top_de` can be used for clustering
+
+we'll use `pairwise$top_by_gene` for our example
+```{r}
+mat_pairwise <- prepare_kmeans_matrix_topDE_TPMmean(
+  top_de = pairwise$top_by_gene,
+  gene_expr = gene_expr
+)
+
+dim(mat_pairwise)
+```
+
+## Determine the optimal number of clusters
+
+The `evaluate_kmeans_k` function helps determine the best number of clusters
+using silhouette and WSS diagnostics.
+
+4 clusters is the optimal number in both graphs
+```{r}
+evaluate_kmeans_k(mat_pairwise, k_max = 10)
+```
+
+## Run k-means clustering
+
+Once a cluster number is chosen, run k-means using the `run_kmeans` function and determine which genes are in which cluster:
+
+```{r}
+km <- run_kmeans(mat_pairwise, centers = 4)
+
+head(km$clusters)
+```
+# Export results
+## Build a heatmap table to export
+
+The `build_heatmap` function combines:
+
+- TPMmean expression
+- cluster assignments
+- differential expression statistics
+- gene annotations
+
+into a single table suitable for heatmap visualization.
+We will look at all nodal root buds but if we wanted to view only some, we would use:  groups = c("TX08001_Nodal_Root_Bud_Node_7", "TX08001_Nodal_Root_Bud_Node_21")
+
+```{r}
+heatmap_df <- build_heatmap(
+  gene_expr = gene_expr,
+  clusters = km,
+  top_de = pairwise$top_by_gene,
+  fc_cols = c( "log2FoldChange","contrast", "padj", "log2FoldChange"),
+  annot_df = example_data$Sorghum_gene_annotation
+)
+
+head(heatmap_df)
+```
+
+## Export heatmap dataframe
+
+The `write_heatmap_xlsx` function writes the heatmap table to Excel
+using built-in color rules for the TPMmean values.
+
+The function is given below but commented out. 
+The output file can be found in the extdata folder and details are shown below
+
+The heatmap Excel file contains colors and frozen panes. 
+To see these properly, open the file in Excel or LibreOffice."
+```{r}
+# write_heatmap_xlsx(
+#   heatmap_df,
+#   "heatmap_export.xlsx"
+# )
+
+# Heatmap Excel demo
+heatmap_demo_file <- system.file(
+  "extdata/heatmap_export_demo.xlsx",
+  package = "SbCompendium"
+)
+
+if (file.exists(heatmap_demo_file)) {
+  print("Heatmap Excel demo file (conditional formatting + frozen panes):")
+  print(heatmap_demo_file)
+} else {
+  warning("Heatmap demo file not found! Make sure it's in inst/extdata/")
+}
+```
+
+# Export cluster gene lists for DAVID GO term analysis
+
+Cluster gene lists can be exported in a DAVID-compatible format. 
+The `export_clusters_david` function is given below commented out. 
+The output files can be accessed below
+```{r}
+
+# export_clusters_david(
+#   heatmap_df,
+#   out_dir = "inst/examples/cluster_gene_lists"
+# )
+
+# Cluster gene list demos
+cluster_demo_dir <- system.file(
+  "extdata/cluster_gene_lists_demo", 
+  package = "SbCompendium"
+)
+
+cluster_files <- list.files(cluster_demo_dir, full.names = TRUE)
+
+if (length(cluster_files) > 0) {
+  print("Cluster gene list demo files (ready for DAVID GO term analysis):")
+} else {
+  warning("No cluster demo files found! Make sure they're in inst/extdata/cluster_gene_lists_demo/")
+}
+
+# -----------------------------
+# Preview a small portion in R
+# -----------------------------
+# Show first few rows of cluster 1 (if available)
+if (length(cluster_files) >= 1) {
+  cluster1 <- read.delim(cluster_files[1], header = FALSE)
+  head(cluster1)
+}
+```
+
