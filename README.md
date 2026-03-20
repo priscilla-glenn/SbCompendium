@@ -32,8 +32,7 @@ cd SbCompendium
 
 git lfs pull
 
-In Rstudio, once the repo is cloned:
-# Change the path to the folder where you cloned the repo
+In Rstudio, once the repo is cloned: change the path to the folder where you cloned the repo
 devtools::install_local("path/to/SbCompendium", build_vignettes = FALSE)
 
 library(SbCompendium)
