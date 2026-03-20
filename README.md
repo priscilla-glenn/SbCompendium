@@ -27,7 +27,9 @@ This repository includes large files tracked with **Git LFS**.
 
 ## Clone the repo with LFS (cpmmand line)
 git clone https://github.com/priscilla-glenn/SbCompendium.git
+
 cd SbCompendium
+
 git lfs pull
 
 In Rstudio, once the repo is cloned:
