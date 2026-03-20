@@ -39,7 +39,10 @@ library(SbCompendium)
 
 # How to load the compendium and an example dataset
 data("sorghum_compendium")
+
 experiment <- importTable(sorghum_compendium[["cle_33"]])
+
 head(experiment)
+
 
 #Please check the vignette and manual to see full details and usage for each function
