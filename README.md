@@ -45,4 +45,8 @@ experiment <- importTable(example_data[["nodal_buds_28"]])
 head(experiment)
 
 
+# To load the full compendium dataset
+data("sorghum_compendium")
+- it will load into your environment as sorghum_compendium and each experiment can be viewed. ex: sorghum_compendium$nodal_buds_28
+
 #Please check the vignette and manual to see full details and usage for each function
