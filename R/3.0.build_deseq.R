@@ -98,7 +98,11 @@ build_deseq <- function(df,
     countData <- subset_df[, count_cols, drop = FALSE]
 
     # Infer group names from count columns (aligned to countData column order)
-    sample_names <- sub("([._-][0-9]+|[._-]?R[0-9]+)_counts$", "", count_cols)
+    sample_names <- sub(
+        "([._-][0-9]+|[._-]?R[0-9]+)(\\.v[0-9]+)?_counts$",
+        "",
+        count_cols
+    )
     condition <- factor(sample_names, levels = unique(sample_names))
 
     # Relevel if requested
