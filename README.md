@@ -1,5 +1,11 @@
 # SbCompendium
 
+If you use the SbCompendium package/data, please cite our paper, "Compilation and Utilization of a Sorghum Transcriptome Compendium for Gene Regulatory Network Analysis and Crop Trait Engineering".
+
+If you have any questions about the datasets themselves, please email priscilla.doupnik@ag.tamu.edu.
+
+If you have any bugs/questions about this R package, please open a new issue and we will respond in a timely manner. 
+
 ## Purpose
 This package was created to maintain the Mullet Lab Sorghum RNA-seq compendium.
 A manuscript with the meta data for each experiment is currently under review.
