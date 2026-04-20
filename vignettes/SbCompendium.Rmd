@@ -139,8 +139,6 @@ Genes can optionally be filtered using a TPM threshold.
 - chosen TPM threshold (TPM_thresh)
 
 ```{r}
-gene_expr <- importTable(sorghum_compendium[[i]])
-
 dds_out <- build_deseq(
   gene_expr,
   TPM_thresh = 5,
