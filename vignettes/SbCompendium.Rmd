@@ -139,10 +139,6 @@ Genes can optionally be filtered using a TPM threshold.
 - chosen TPM threshold (TPM_thresh)
 
 ```{r}
-i <- 2 
-
-data <- sorghum_compendium[[i]]
-
 gene_expr <- importTable(sorghum_compendium[[i]])
 
 dds_out <- build_deseq(
@@ -157,14 +153,6 @@ dds_out$groups
 #number of replicates per condition
 dds_out$rep_counts
 
-
-colnames(data) <- gsub(
-  "(Core|Rind)_TPM$",
-  "\\1_TPMmean",
-  colnames(data)
-)
-
-sorghum_compendium[[i]] <- data
 ```
 
 # Run a differential expression contrast
