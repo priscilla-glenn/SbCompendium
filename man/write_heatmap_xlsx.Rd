@@ -16,7 +16,9 @@ write_heatmap_xlsx(
 \arguments{
 \item{export_df}{data.frame to export.}
 
-\item{file}{Output .xlsx file path.}
+\item{file}{Output .xlsx file path. Can be a full (absolute) path or
+a relative path. If a relative path is provided, the file is saved
+to the current working directory (see getwd()).}
 
 \item{sheet}{Sheet name.}
 
