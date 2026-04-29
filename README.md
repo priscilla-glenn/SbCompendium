@@ -58,44 +58,44 @@ data("sorghum_compendium")
 #Please check the vignette and manual to see full details and usage for each function
 Experiments in the compendium include:
 
-TX08001_coreRind_34
-cle_33
-TX08001_highRes_32
-nitrogen_31
-roots_GH_water_stress_30
-roots_field_water_stress_29
-nodal_buds_28
-LS_removal_27
-seedling_MLG_26
-TX08001_density_25
-xR07007_diurnal_24.1
-xR07007_diurnal_24.2
-x100M_diurnal_24.3
-x58M_BSI_22.1
-x100M_BSI_22.2
-x58M_diurnal_22.3
-tx_sas_21
-wray_stem_dev_20
-TX08001_radial_19
-nroots_18
-R07020_AER_17
-internode_growth_16
-SASV3_TPM_15
-buds_14
-DellaDevV3_13.1
-dleaves_13.2
-DellaDiurnalCycling_12.1
-KellerDiurnalCycling_12.2*
-wray_LCM_11.1
-wray_LCM_11.2
-Dw2dw2_10
-SYM_9
-DYM_8
-DDYM_7
-BTx623_atlas_6
-cc100M_5
-ccBTx623_4
-ccSM100_3*
-temp_1and2*
+- TX08001_coreRind_34
+- cle_33
+- TX08001_highRes_32
+- nitrogen_31
+- roots_GH_water_stress_30
+- roots_field_water_stress_29
+- nodal_buds_28
+- LS_removal_27
+- seedling_MLG_26
+- TX08001_density_25
+- xR07007_diurnal_24.1
+- xR07007_diurnal_24.2
+- x100M_diurnal_24.3
+- x58M_BSI_22.1
+- x100M_BSI_22.2
+- x58M_diurnal_22.3
+- tx_sas_21
+- wray_stem_dev_20
+- TX08001_radial_19
+- nroots_18
+- R07020_AER_17
+- internode_growth_16
+- SASV3_TPM_15
+- buds_14
+- DellaDevV3_13.1
+- dleaves_13.2
+- DellaDiurnalCycling_12.1
+- KellerDiurnalCycling_12.2*
+- wray_LCM_11.1
+- wray_LCM_11.2
+- Dw2dw2_10
+- SYM_9
+- DYM_8
+- DDYM_7
+- BTx623_atlas_6
+- cc100M_5
+- ccBTx623_4
+- ccSM100_3*
+- temp_1and2*
 
 *These experiments do not included count data for DEseq analysis
