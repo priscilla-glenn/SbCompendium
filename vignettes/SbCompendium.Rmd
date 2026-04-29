@@ -280,7 +280,7 @@ To see these properly, open the file in Excel or LibreOffice."
 ```{r}
 # write_heatmap_xlsx(
 #   heatmap_df,
-#   "heatmap_export.xlsx"
+#   "heatmap_export.xlsx" #include full path to choose export folder
 # )
 
 # Heatmap Excel demo

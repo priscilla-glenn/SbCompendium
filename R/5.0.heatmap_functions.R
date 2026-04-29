@@ -341,7 +341,9 @@ build_heatmap <- function(gene_expr,
 #' Write heatmap export table to Excel using Python (robust UTF-8).
 #'
 #' @param export_df data.frame to export.
-#' @param file Output .xlsx file path.
+#' @param file Output .xlsx file path. Can be a full (absolute) path or
+#'   a relative path. If a relative path is provided, the file is saved
+#'   to the current working directory (see getwd()).
 #' @param sheet Sheet name.
 #' @param expr_cols Expression columns to color. If NULL, auto-detect columns
 #'   containing "TPMmean".
@@ -414,5 +416,8 @@ write_heatmap_xlsx <- function(export_df,
         replace_zero_annotation_with_blank = replace_zero_annotation_with_blank
     )
 
+    message("Excel file saved to: ", normalizePath(file, mustWork = FALSE))
     invisible(file)
+
+
 }

@@ -365,14 +365,14 @@ evaluate_kmeans_k <- function(mat,
         FUNcluster = kmeans_fun,
         method = "silhouette",
         k.max = k_cap
-    )
+    ) + ggplot2::ggtitle("Silhouette Method for Optimal k")
 
     wss_plot <- factoextra::fviz_nbclust(
         mat_eval,
         FUNcluster = kmeans_fun,
         method = "wss",
         k.max = k_cap
-    )
+    ) + ggplot2::ggtitle("WSS (Elbow) Method for Optimal k")
 
     if (isTRUE(print_plots)) {
         print(silhouette_plot)
