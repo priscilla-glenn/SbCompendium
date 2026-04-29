@@ -235,12 +235,24 @@ evaluate_kmeans_k(mat_pairwise, k_max = 10)
 
 ## Run k-means clustering
 
-Once a cluster number is chosen, run k-means using the `run_kmeans` function and determine which genes are in which cluster:
+Once a cluster number is chosen, run k-means using the `run_kmeans` function and determine which genes are in which cluster.
+
+Then print a graph with the median expression values across the collection points for each cluster. This can either be the raw TPMmean values or log transformmed. 
 
 ```{r}
 km <- run_kmeans(mat_pairwise, centers = 4)
 
 head(km$clusters)
+
+
+p <- plot_cluster_median_profiles_tpm(
+    gene_expr = gene_expr,
+    clusters = km$clusters,
+    log_transform = FALSE,
+    title = "Stem development expression clusters"
+)
+
+print(p)
 ```
 # Export results
 ## Build a heatmap table to export

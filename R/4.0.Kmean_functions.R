@@ -469,3 +469,127 @@ run_kmeans <- function(mat,
 
     return(list(kmeans = km, clusters = clusters))
 }
+
+
+#' Plot median TPMmean expression per k-means cluster
+#'
+#' Uses cluster assignments from k-means but pulls TRUE TPMmean values
+#' from gene_expr (not scaled/processed matrices).
+#'
+#' @param gene_expr Data.frame/matrix with GeneIDV3 as rownames and includes TPMmean columns
+#' @param clusters Data.frame with GeneIDV3 and cluster assignments
+#' @param GeneIDV3_col Character. Default "GeneIDV3" may be Gene_ID
+#' @param cluster_col Character. Default "cluster"
+#' @param tpm_cols Optional vector of TPMmean columns. If NULL, uses all columns
+#' @param log_transform Logical. Apply log2(TPMmean + 1). Default TRUE
+#' @param title Plot title
+#'
+#' @return ggplot object
+#' @export
+plot_cluster_median_profiles_tpm <- function(gene_expr,
+                                             clusters,
+                                             GeneIDV3_col = "GeneIDV3",
+                                             cluster_col = "cluster",
+                                             tpm_cols = NULL,
+                                             log_transform = TRUE,
+                                             title = "Cluster median TPM expression profiles") {
+
+    if (!is.data.frame(gene_expr) && !is.matrix(gene_expr)) {
+        stop("gene_expr must be a data.frame or matrix.", call. = FALSE)
+    }
+
+    gene_ids <- rownames(gene_expr)
+
+    if (is.null(gene_ids)) {
+        stop("gene_expr must have rownames as GeneIDV3.", call. = FALSE)
+    }
+
+    # ------------------------------------------------------------
+    # Select TPM columns
+    # ------------------------------------------------------------
+    if (is.null(tpm_cols)) {
+        tpm_cols <- grep("TPMmean$", colnames(gene_expr), value = TRUE)
+    }
+
+    if (length(tpm_cols) == 0) {
+        stop("No TPMmean columns found in gene_expr.", call. = FALSE)
+    }
+
+    # ------------------------------------------------------------
+    # Match genes
+    # ------------------------------------------------------------
+    genes <- clusters[[GeneIDV3_col]]
+    genes <- genes[!is.na(genes)]
+
+    common <- intersect(genes, gene_ids)
+
+    if (length(common) == 0) {
+        stop("No overlapping genes between clusters and gene_expr.", call. = FALSE)
+    }
+
+    expr <- gene_expr[common, tpm_cols, drop = FALSE]
+    cl <- clusters[match(common, clusters[[GeneIDV3_col]]), cluster_col]
+
+    # ------------------------------------------------------------
+    # Optional log transform (on TRUE TPM)
+    # ------------------------------------------------------------
+    if (log_transform) {
+        if (any(expr < 0, na.rm = TRUE)) {
+            warning("Negative values detected; skipping log transform.", call. = FALSE)
+        } else {
+            expr <- log2(expr + 1)
+        }
+    }
+
+    # ------------------------------------------------------------
+    # Compute cluster medians
+    # ------------------------------------------------------------
+    cluster_levels <- sort(unique(cl))
+    sample_names <- colnames(expr)
+
+    cluster_medians <- sapply(cluster_levels, function(k) {
+
+        idx <- which(cl == k)
+
+        if (length(idx) == 0) {
+            return(rep(NA, ncol(expr)))
+        }
+
+        apply(expr[idx, , drop = FALSE], 2, median, na.rm = TRUE)
+    })
+
+    # ------------------------------------------------------------
+    # Format for plotting
+    # ------------------------------------------------------------
+    df <- data.frame(
+        sample = sample_names,
+        cluster_medians,
+        check.names = FALSE
+    )
+
+    df_long <- reshape2::melt(df, id.vars = "sample")
+    colnames(df_long) <- c("sample", "cluster", "median_expr")
+
+    df_long$sample <- factor(df_long$sample, levels = sample_names)
+
+    # ------------------------------------------------------------
+    # Plot
+    # ------------------------------------------------------------
+    p <- ggplot2::ggplot(df_long,
+                         ggplot2::aes(x = sample,
+                                      y = median_expr,
+                                      group = cluster,
+                                      color = cluster)) +
+        ggplot2::geom_line(linewidth = 1) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::theme_bw() +
+        ggplot2::labs(
+            title = title,
+            x = "Condition",
+            y = ifelse(log_transform, "log2(TPMmean + 1)", "TPMmean"),
+            color = "Cluster"
+        ) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+
+    return(p)
+}
