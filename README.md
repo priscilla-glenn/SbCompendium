@@ -55,7 +55,7 @@ head(experiment)
 data("sorghum_compendium")
 - it will load into your environment as sorghum_compendium and each experiment can be viewed. ex: sorghum_compendium$nodal_buds_28
 
-#Please check the vignette and manual to see full details and usage for each function
+# Please check the vignette and manual to see full details and usage for each function
 Experiments in the compendium include:
 
 - TX08001_coreRind_34
