@@ -264,44 +264,79 @@ set_umap_group_order <- function(umap_obj, group_order) {
 }
 
 
-#' Plot UMAP results with numeric group labels and a clean legend
+#' Plot UMAP results with numeric group labels and optional condition coloring
 #'
-#' Plots UMAP coordinates and labels each sample with a number representing its group.
-#' The legend shows the mapping from number -> group name (no redundant "1=" text).
+#' Plots UMAP coordinates and labels each sample with a numeric identifier
+#' corresponding to its group. The function supports two modes:
+#'
+#' \strong{1. Default mode (no pattern/color inputs):}
+#' \itemize{
+#'   \item Points are labeled with numeric group IDs
+#'   \item All labels are rendered in black
+#'   \item A clean legend maps numbers to group names
+#' }
+#'
+#' \strong{2. Custom coloring mode (LD/SD or pattern-based grouping):}
+#' \itemize{
+#'   \item Groups can be collapsed using `group_patterns`
+#'   \item Custom colors can be provided via `color_values`
+#'   \item Labels remain numeric group IDs
+#'   \item Color represents condition/group class (e.g., LD vs SD)
+#'   \item Legend behavior is replaced with a manual in-plot legend
+#'     (colored circles with text labels)
+#' }
+#'
 #' Group order follows factor levels if `group` is a factor (e.g., after
-#' `set_umap_group_order()`); otherwise uses the order of first appearance.
+#' `set_umap_group_order()`); otherwise, it follows the order of first appearance.
 #'
 #' @param x Output from `run_umap_tpm()` (a list with `umap_df`) OR a data.frame
 #'   containing columns `UMAP1`, `UMAP2`, and `group`.
-#' @param text_size Numeric. Text size for point labels. Default 5.
-#' @param theme_fn A ggplot2 theme function. Default `ggplot2::theme_minimal`.
+#' @param text_size Numeric. Text size for group labels. Default is 5.
+#' @param theme_fn A ggplot2 theme function. Default is `ggplot2::theme_minimal`.
+#' @param group_patterns Optional named list of regex patterns used to collapse
+#'   groups into higher-level conditions (e.g., LD vs SD).
+#' @param color_values Optional named vector of colors for `group_patterns`.
+#'   Names must match pattern names (or derived groups). If NULL, colors are
+#'   generated automatically.
+#' @param default_color Color used for unmatched groups when using patterns.
 #'
 #' @return A ggplot object.
+#'
 #' @export
-plot_umap <- function(x,
-                      text_size = 5,
-                      theme_fn = ggplot2::theme_minimal) {
+plot_umap <- function(
+        x,
+        text_size = 5,
+        theme_fn = ggplot2::theme_minimal,
+        group_patterns = NULL,
+        color_values = NULL,
+        default_color = "black"
+) {
 
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("Package 'ggplot2' is required.", call. = FALSE)
     }
 
-    # Accept run_umap_tpm() output or a data.frame
+    if (!requireNamespace("scales", quietly = TRUE) && !is.null(group_patterns)) {
+        stop("Package 'scales' is required.", call. = FALSE)
+    }
+
     if (is.list(x) && !is.null(x$umap_df)) {
         df <- x$umap_df
     } else if (is.data.frame(x)) {
         df <- x
     } else {
-        stop("x must be output from run_umap_tpm() or a data.frame.", call. = FALSE)
+        stop("x must be output from run_umap_tpm() or a data.frame.",
+             call. = FALSE)
     }
 
     if (!all(c("UMAP1", "UMAP2", "group") %in% names(df))) {
-        stop("UMAP data must contain columns 'UMAP1', 'UMAP2', and 'group'.", call. = FALSE)
+        stop("UMAP data must contain columns 'UMAP1', 'UMAP2', and 'group'.",
+             call. = FALSE)
     }
 
-    # Determine group order:
-    # - if factor: use levels (respects set_umap_group_order())
-    # - else: use order of first appearance
+    # ---------------------------------------------------------
+    # Group ordering (UNCHANGED)
+    # ---------------------------------------------------------
     if (is.factor(df$group)) {
         group_levels <- levels(df$group)
     } else {
@@ -314,31 +349,149 @@ plot_umap <- function(x,
         stringsAsFactors = FALSE
     )
 
-    # Map group -> numeric id WITHOUT reordering rows (avoid merge())
-    df$group_id <- group_map$group_id[match(df$group, group_map$group)]
+    df$group_id <- group_map$group_id[
+        match(df$group, group_map$group)
+    ]
 
-    p <- ggplot2::ggplot(
-        df,
-        ggplot2::aes(
-            x = UMAP1,
-            y = UMAP2,
-            label = group_id,
-            color = group
+    use_custom_coloring <- !is.null(group_patterns) || !is.null(color_values)
+
+    # =========================================================
+    # CASE 1: ORIGINAL BEHAVIOR
+    # =========================================================
+    if (!use_custom_coloring) {
+
+        return(
+            ggplot2::ggplot(df, ggplot2::aes(x = UMAP1, y = UMAP2)) +
+                ggplot2::geom_text(
+                    ggplot2::aes(label = group_id, color = group),
+                    size = text_size
+                ) +
+                ggplot2::scale_color_manual(
+                    values = rep("black", length(group_levels)),
+                    breaks = group_levels,
+                    labels = group_levels,
+                    name = "Group"
+                ) +
+                ggplot2::guides(
+                    color = ggplot2::guide_legend(
+                        override.aes = list(label = group_map$group_id)
+                    )
+                ) +
+                theme_fn()
         )
-    ) +
-        ggplot2::geom_text(size = text_size) +
-        ggplot2::scale_color_manual(
-            values = rep("black", length(group_levels)),  # keep labels black
-            breaks = group_levels,                        # legend order
-            labels = group_levels,                        # legend text (no "1=")
-            name = "Group"
-        ) +
-        ggplot2::guides(
-            color = ggplot2::guide_legend(
-                override.aes = list(label = group_map$group_id)  # legend keys show 1,2,3...
-            )
-        ) +
-        theme_fn()
+    }
 
-    return(p)
+    # =========================================================
+    # CASE 2: CUSTOM COLORING
+    # =========================================================
+
+    df$color_group <- "Other"
+
+    if (!is.null(group_patterns)) {
+        for (pattern_name in names(group_patterns)) {
+
+            pattern <- group_patterns[[pattern_name]]
+            matches <- grepl(pattern, df$group, ignore.case = TRUE)
+            df$color_group[matches] <- pattern_name
+        }
+    }
+
+    df$color_group <- factor(df$color_group, levels = unique(df$color_group))
+
+    if (is.null(color_values)) {
+
+        unique_groups <- levels(df$color_group)
+
+        palette_colors <- scales::hue_pal()(length(unique_groups))
+
+        color_values <- stats::setNames(
+            palette_colors,
+            unique_groups
+        )
+
+        if ("Other" %in% names(color_values)) {
+            color_values["Other"] <- default_color
+        }
+    }
+
+    # ---------------------------------------------------------
+    # 2-COLUMN LEGEND SYSTEM (CLEAN + STABLE)
+    # ---------------------------------------------------------
+
+    legend_labels <- names(color_values)
+
+    x_range <- diff(range(df$UMAP1, na.rm = TRUE))
+    y_range <- diff(range(df$UMAP2, na.rm = TRUE))
+
+    x_max <- max(df$UMAP1, na.rm = TRUE)
+    y_max <- max(df$UMAP2, na.rm = TRUE)
+
+    legend_df <- data.frame(
+        color_group = legend_labels
+    )
+
+    # vertical spacing
+    step <- max(y_range * 0.10, 0.25)
+
+    legend_df$y <- y_max - seq(
+        0,
+        by = step,
+        length.out = nrow(legend_df)
+    )
+
+    # ---------------------------------------------------------
+    # TWO COLUMNS
+    # ---------------------------------------------------------
+
+    legend_df$circle_x <- x_max + (x_range * 0.03)
+    legend_df$text_x   <- x_max + (x_range * 0.055)
+
+    legend_df$label_wrapped <- stringr::str_wrap(legend_df$color_group, 12)
+
+    # ---------------------------------------------------------
+    # FINAL PLOT
+    # ---------------------------------------------------------
+
+    ggplot2::ggplot(df, ggplot2::aes(x = UMAP1, y = UMAP2)) +
+
+        # main labels
+        ggplot2::geom_text(
+            ggplot2::aes(label = group_id, color = color_group),
+            size = text_size,
+            show.legend = FALSE
+        ) +
+
+        # circles (column 1)
+        ggplot2::geom_point(
+            data = legend_df,
+            ggplot2::aes(x = circle_x, y = y, color = color_group),
+            size = 4,
+            show.legend = FALSE
+        ) +
+
+        # text (column 2)
+        ggplot2::geom_text(
+            data = legend_df,
+            ggplot2::aes(x = text_x, y = y, label = label_wrapped),
+            hjust = 0,
+            size = 4,
+            show.legend = FALSE
+        ) +
+
+        ggplot2::scale_color_manual(
+            values = color_values,
+            guide = "none"
+        ) +
+
+        ggplot2::coord_cartesian(clip = "off") +
+
+        ggplot2::scale_x_continuous(
+            expand = ggplot2::expansion(mult = c(0.02, 0.08))
+        ) +
+
+        ggplot2::theme(
+            plot.margin = ggplot2::margin(5.5, 90, 5.5, 5.5)
+        ) +
+
+        theme_fn()
 }

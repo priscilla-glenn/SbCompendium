@@ -2,24 +2,59 @@
 % Please edit documentation in R/2.run_UMAP.R
 \name{plot_umap}
 \alias{plot_umap}
-\title{Plot UMAP results with numeric group labels and a clean legend}
+\title{Plot UMAP results with numeric group labels and optional condition coloring}
 \usage{
-plot_umap(x, text_size = 5, theme_fn = ggplot2::theme_minimal)
+plot_umap(
+  x,
+  text_size = 5,
+  theme_fn = ggplot2::theme_minimal,
+  group_patterns = NULL,
+  color_values = NULL,
+  default_color = "black"
+)
 }
 \arguments{
 \item{x}{Output from \code{run_umap_tpm()} (a list with \code{umap_df}) OR a data.frame
 containing columns \code{UMAP1}, \code{UMAP2}, and \code{group}.}
 
-\item{text_size}{Numeric. Text size for point labels. Default 5.}
+\item{text_size}{Numeric. Text size for group labels. Default is 5.}
 
-\item{theme_fn}{A ggplot2 theme function. Default \code{ggplot2::theme_minimal}.}
+\item{theme_fn}{A ggplot2 theme function. Default is \code{ggplot2::theme_minimal}.}
+
+\item{group_patterns}{Optional named list of regex patterns used to collapse
+groups into higher-level conditions (e.g., LD vs SD).}
+
+\item{color_values}{Optional named vector of colors for \code{group_patterns}.
+Names must match pattern names (or derived groups). If NULL, colors are
+generated automatically.}
+
+\item{default_color}{Color used for unmatched groups when using patterns.}
 }
 \value{
 A ggplot object.
 }
 \description{
-Plots UMAP coordinates and labels each sample with a number representing its group.
-The legend shows the mapping from number -> group name (no redundant "1=" text).
+Plots UMAP coordinates and labels each sample with a numeric identifier
+corresponding to its group. The function supports two modes:
+}
+\details{
+\strong{1. Default mode (no pattern/color inputs):}
+\itemize{
+\item Points are labeled with numeric group IDs
+\item All labels are rendered in black
+\item A clean legend maps numbers to group names
+}
+
+\strong{2. Custom coloring mode (LD/SD or pattern-based grouping):}
+\itemize{
+\item Groups can be collapsed using \code{group_patterns}
+\item Custom colors can be provided via \code{color_values}
+\item Labels remain numeric group IDs
+\item Color represents condition/group class (e.g., LD vs SD)
+\item Legend behavior is replaced with a manual in-plot legend
+(colored circles with text labels)
+}
+
 Group order follows factor levels if \code{group} is a factor (e.g., after
-\code{set_umap_group_order()}); otherwise uses the order of first appearance.
+\code{set_umap_group_order()}); otherwise, it follows the order of first appearance.
 }

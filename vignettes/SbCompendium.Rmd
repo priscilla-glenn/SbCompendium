@@ -77,7 +77,7 @@ In this example, each of the nodal root bud groups cluster near one another.
 We can also easily seed that group 4, node 21 only has 2 reps instead of 3
 In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes
 ```{r}
-um <- run_umap_tpm(gene_expr, n_neighbors = 3)
+um <- run_umap_tpm(gene_expr, n_neighbors = 3, seed = 10)
 
 #head(um$umap_df)
 
@@ -106,7 +106,7 @@ c(
 
 plot_umap(um2)
 ```
-lets reorder them properly now
+lets reorder them properly now and color code them
 ```{r}
 um2 <- set_umap_group_order(
   um,
@@ -116,6 +116,24 @@ c(
   "TX08001_Nodal_Root_Bud_Node_15",
   "TX08001_Nodal_Root_Bud_Node_21"
 )
+)
+
+
+plot_umap(um2, 
+    group_patterns = list(
+        Node7 = "7",
+        Node10 = "10",
+        Node15 = "15",
+        Node21 = "21"
+    )
+    ,
+     color_values = c(
+        Node7 = "red",
+        Node10 = "blue",
+        Node15 = "darkgreen",
+        Node21 = "orange"
+    
+     )
 )
 
 plot_umap(um2)
