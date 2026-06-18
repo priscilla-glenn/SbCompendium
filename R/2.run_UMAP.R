@@ -230,6 +230,8 @@ print_umap_groups <- function(umap_obj) {
     invisible(groups)
 }
 
+#TODO Make users able to adjust the group names on the umap graph
+#TODO Work on color coding groups
 
 #' Set the order of groups in a UMAP result
 #'
