@@ -98,4 +98,4 @@ Experiments in the compendium include:
 - ccSM100_3*
 - temp_1and2*
 
-*These experiments do not included count data for DEseq analysis
+*These experiments do not include count data for DEseq analysis
