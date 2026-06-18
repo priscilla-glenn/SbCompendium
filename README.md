@@ -31,7 +31,7 @@ This repository includes large files tracked with **Git LFS**.
 - Or via command line:
   - git lfs install
 
-## Clone the repo with LFS (cpmmand line)
+## Clone the repo with LFS (command line)
 git clone https://github.com/priscilla-glenn/SbCompendium.git
 
 cd SbCompendium
