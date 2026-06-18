@@ -1,6 +1,6 @@
 # SbCompendium
 
-If you use the SbCompendium package/data, please cite our paper, "Compilation and Utilization of a Sorghum Transcriptome Compendium for Gene Regulatory Network Analysis and Crop Trait Engineering".
+If you use the SbCompendium package/data, please cite our paper, "Compilation and Utilization of a Sorghum Transcriptome Compendium for Gene Regulatory Network Analysis and Crop Trait Engineering". https://doi.org/10.1111/tpj.70922 
 
 If you have any questions about the datasets themselves, please email priscilla.doupnik@ag.tamu.edu.
 
