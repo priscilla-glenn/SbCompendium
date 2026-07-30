@@ -282,7 +282,10 @@ set_umap_group_order <- function(umap_obj, group_order) {
 #' @export
 plot_umap <- function(x,
                       text_size = 5,
+                      label_type = c("group", "sample", "color"),
                       theme_fn = ggplot2::theme_minimal) {
+
+    label_type <- match.arg(label_type)
 
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("Package 'ggplot2' is required.", call. = FALSE)
@@ -319,28 +322,83 @@ plot_umap <- function(x,
     # Map group -> numeric id WITHOUT reordering rows (avoid merge())
     df$group_id <- group_map$group_id[match(df$group, group_map$group)]
 
-    p <- ggplot2::ggplot(
-        df,
-        ggplot2::aes(
-            x = UMAP1,
-            y = UMAP2,
-            label = group_id,
-            color = group
-        )
-    ) +
-        ggplot2::geom_text(size = text_size) +
-        ggplot2::scale_color_manual(
-            values = rep("black", length(group_levels)),  # keep labels black
-            breaks = group_levels,                        # legend order
-            labels = group_levels,                        # legend text (no "1=")
-            name = "Group"
-        ) +
-        ggplot2::guides(
-            color = ggplot2::guide_legend(
-                override.aes = list(label = group_map$group_id)  # legend keys show 1,2,3...
+    df$plot_label <- switch(
+        label_type,
+        group = df$group_id,
+        sample = sub("_TPM$", "", df$sample),
+        none = NA_character_
+    )
+
+    if (label_type == "color") {
+
+        p <- ggplot2::ggplot(
+            df,
+            ggplot2::aes(
+                x = UMAP1,
+                y = UMAP2,
+                color = group
             )
         ) +
-        theme_fn()
+            ggplot2::geom_point(size = 3)
+
+    } else {
+
+        p <- ggplot2::ggplot(
+            df,
+            ggplot2::aes(
+                x = UMAP1,
+                y = UMAP2,
+                label = plot_label,
+                color = group
+            )
+        ) +
+            ggplot2::geom_text(size = text_size)
+
+    }
+    if (label_type == "group") {
+
+    p <- p +
+            ggplot2::scale_color_manual(
+                values = rep("black", length(group_levels)),
+                breaks = group_levels,
+                labels = group_levels,
+                name = "Group"
+            )
+
+    } else if (label_type == "color") {
+
+        # keep default ggplot colors for groups
+        p <- p +
+            ggplot2::scale_color_discrete(
+                breaks = group_levels,
+                labels = group_levels,
+                name = "Group"
+            )
+
+    }
+
+    if (label_type == "group") {
+
+        p <- p +
+            ggplot2::guides(
+                color = ggplot2::guide_legend(
+                    override.aes = list(label = group_map$group_id)
+                )
+            )
+
+    }
+
+    p <- p + theme_fn()
+
+    p <- p +
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(
+            plot.margin = ggplot2::margin(10, 40, 10, 10)
+        )
+
+    if (label_type == "sample") {
+        p <- p + ggplot2::theme(legend.position = "color")
+    }
 
     return(p)
 }

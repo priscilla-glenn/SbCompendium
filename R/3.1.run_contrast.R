@@ -59,7 +59,7 @@
 #' res$top_de
 #'
 run_contrast <- function(dds,
-                         groupA,
+                         groupA, #TODO update so reference level can be set and contrast run for each group compared to the reference
                          groupB,
                          alpha = 0.05,
                          lfc_thresh = 2.32) {

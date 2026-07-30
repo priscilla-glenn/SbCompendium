@@ -82,6 +82,8 @@ um <- run_umap_tpm(gene_expr, n_neighbors =5, seed = 10)
 #head(um$umap_df)
 
 plot_umap(um)
+plot_umap(um, label_type = "sample") #print the sample names on the graphs
+plot_umap(um, label_type = "color") #color codes groups instead of numeric groups
 ```
 
 ## Reorder Group labels if necessary
@@ -309,9 +311,9 @@ if (file.exists(heatmap_demo_file)) {
 }
 ```
 
-# Export cluster gene lists for DAVID GO term analysis
+# Export gene lists for DAVID GO term analysis
 
-Cluster gene lists can be exported in a DAVID-compatible format. 
+Gene lists can be exported in a DAVID-compatible format. 
 The `export_clusters_david` function is given below commented out. 
 The output files can be accessed below
 ```{r}

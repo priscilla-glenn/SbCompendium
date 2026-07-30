@@ -4,7 +4,12 @@
 \alias{plot_umap}
 \title{Plot UMAP results with numeric group labels and a clean legend}
 \usage{
-plot_umap(x, text_size = 5, theme_fn = ggplot2::theme_minimal)
+plot_umap(
+  x,
+  text_size = 5,
+  label_type = c("group", "sample", "color"),
+  theme_fn = ggplot2::theme_minimal
+)
 }
 \arguments{
 \item{x}{Output from \code{run_umap_tpm()} (a list with \code{umap_df}) OR a data.frame
