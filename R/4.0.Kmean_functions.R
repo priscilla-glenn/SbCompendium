@@ -475,7 +475,8 @@ run_kmeans <- function(mat,
 #' Plot median TPMmean expression per k-means cluster
 #'
 #' Uses cluster assignments from k-means but pulls TRUE TPMmean values
-#' from gene_expr (not scaled/processed matrices).
+#' from gene_expr (not scaled/processed matrices). The trailing `_TPMmean`
+#' suffix is removed automatically from displayed x-axis labels.
 #'
 #' @param gene_expr Data.frame/matrix with GeneIDV3 as rownames and includes TPMmean columns
 #' @param clusters Data.frame with GeneIDV3 and cluster assignments
@@ -590,6 +591,9 @@ plot_cluster_median_profiles_tpm <- function(gene_expr,
             x = "Condition",
             y = ifelse(log_transform, "log2(TPMmean + 1)", "TPMmean"),
             color = "Cluster"
+        ) +
+        ggplot2::scale_x_discrete(
+            labels = function(x) sub("_TPMmean$", "", x)
         ) +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 

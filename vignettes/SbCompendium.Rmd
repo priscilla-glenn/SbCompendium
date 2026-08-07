@@ -203,6 +203,44 @@ dds_out$rep_counts
 
 ```
 
+# Inspect samples with PCA and heatmaps
+
+The `plot_deseq_qc()` function performs a variance-stabilizing transformation
+and produces four quality-control views after the initial DESeq2 run:
+
+- a PCA with sample labels and percent variance on each axis
+- the same PCA with points only for a less crowded view
+- a sample-to-sample Pearson correlation heatmap
+- a row-scaled expression heatmap annotated by condition
+
+The function accepts the complete result from `build_deseq()` and returns the
+transformed data, plots, PCA data, and correlation matrix for further use.
+
+```{r deseq-qc-plots, fig.width=14, fig.height=10, out.width="100%"}
+qc <- plot_deseq_qc(
+  dds_out$dds,
+  intgroup = "condition",
+  blind = TRUE,
+  cor_method = "pearson",
+  heatmap_scale = "row",
+  show_rownames = FALSE,
+  cor_cellheight = 20
+)
+
+# Inspect or reuse returned results
+head(qc$pca_data)
+qc$percent_var
+qc$cor_matrix
+
+# Reprint either PCA version as needed
+qc$pca_plot
+qc$pca_plot_points
+grid::grid.newpage()
+print(qc$correlation_heatmap)
+grid::grid.newpage()
+print(qc$expression_heatmap)
+```
+
 # Run a differential expression contrast
 
 ## A single DESeq2 contrast
@@ -282,18 +320,20 @@ mat_pairwise <- prepare_kmeans_matrix_topDE_TPMmean(
 dim(mat_pairwise)
 ```
 
-To compare expression patterns for exactly two groups, use `groups`. With two
-TPMmean columns, the function avoids row scaling and applies `log2(x + 1)` by
-default. This prevents two-column profiles from collapsing to the same scaled
-values.
+To compare expression patterns for exactly two groups, pass their exact
+TPMmean column names through `tpmmean_cols`. These names contain `Node_Phy`,
+which differs from the group names inferred from the replicate columns. With
+two TPMmean columns, the function avoids row scaling and applies `log2(x + 1)`
+by default. This prevents two-column profiles from collapsing to the same
+scaled values.
 
 ```{r two-group-kmeans, eval=FALSE}
 mat_two_groups <- prepare_kmeans_matrix_topDE_TPMmean(
   top_de = contrast$top_de,
   gene_expr = gene_expr,
-  groups = c(
-    "TX08001_Nodal_Root_Bud_Node_7",
-    "TX08001_Nodal_Root_Bud_Node_21"
+  tpmmean_cols = c(
+    "TX08001_Nodal_Root_Bud_Node_Phy_7_TPMmean",
+    "TX08001_Nodal_Root_Bud_Node_Phy_21_TPMmean"
   )
 )
 ```
@@ -316,6 +356,7 @@ Once a cluster number is chosen, run k-means using the `run_kmeans` function and
 
 Then plot the median expression values across collection points for each cluster.
 These can be either raw TPMmean values or log-transformed values.
+The trailing `_TPMmean` suffix is removed automatically from the x-axis labels.
 
 ```{r}
 km <- run_kmeans(mat_pairwise, centers = 4, seed = 1)
@@ -357,7 +398,7 @@ heatmap_df <- build_heatmap(
 head(heatmap_df)
 ```
 
-The `groups` argument can restrict the exported expression columns to two
+The `tpmmean_cols` argument can restrict the exported expression columns to two
 conditions while retaining the selected differential-expression and annotation
 columns.
 
@@ -367,9 +408,9 @@ heatmap_two_groups <- build_heatmap(
   clusters = km,
   top_de = pairwise$top_by_gene,
   annot_df = example_data$Sorghum_gene_annotation,
-  groups = c(
-    "TX08001_Nodal_Root_Bud_Node_7",
-    "TX08001_Nodal_Root_Bud_Node_21"
+  tpmmean_cols = c(
+    "TX08001_Nodal_Root_Bud_Node_Phy_7_TPMmean",
+    "TX08001_Nodal_Root_Bud_Node_Phy_21_TPMmean"
   )
 )
 

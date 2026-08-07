@@ -35,5 +35,6 @@ ggplot object
 }
 \description{
 Uses cluster assignments from k-means but pulls TRUE TPMmean values
-from gene_expr (not scaled/processed matrices).
+from gene_expr (not scaled/processed matrices). The trailing \verb{_TPMmean}
+suffix is removed automatically from displayed x-axis labels.
 }
