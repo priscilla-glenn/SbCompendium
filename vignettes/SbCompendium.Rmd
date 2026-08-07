@@ -75,14 +75,65 @@ head(gene_expr)
 expression and determine if there are any outliers.
 In this example, each of the nodal root bud groups cluster near one another. 
 We can also easily see that group 4, node 21, has two replicates instead of three.
-In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes
+In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes.
+
+Setting `seed` makes the layout reproducible. Here, genes must exceed a TPM of
+5 in at least one sample, and `return_input = TRUE` retains the filtered,
+gene-by-sample input matrix in the returned object.
 ```{r}
-um <- run_umap_tpm(gene_expr, n_neighbors = 3, seed = 10)
+um <- run_umap_tpm(
+  gene_expr,
+  TPM_thresh = 5,
+  n_neighbors = 3,
+  seed = 20,
+  return_input = TRUE
+)
 
-#head(um$umap_df)
+# Inspect coordinates, inferred sample groups, replicate counts, and settings
+head(um$umap_df)
+um$sample_table
+um$rep_counts
+um$meta
+dim(um$input_matrix)
 
-plot_umap(um)
 ```
+
+
+
+### Default labels
+
+Calling `plot_umap()` without color arguments displays black numeric labels and
+a legend mapping those labels to the full group names.
+
+```{r}
+plot_umap(um2, label_type = "group", text_size = 5)
+```
+
+### Sample labels colored by group
+
+With `label_type = "sample"`, each observation is labeled with its sample-column
+name without the `_TPM` suffix. Labels are colored by their inferred group.
+
+```{r}
+plot_umap(
+  um2,
+  label_type = "sample",
+  text_size = 5
+)
+```
+
+### Points colored by group
+
+With `label_type = "color"`, samples are drawn as colored points rather than
+text labels.
+
+```{r}
+plot_umap(
+  um2,
+  label_type = "color"
+)
+```
+
 
 ## Reorder Group labels if necessary
 
@@ -106,9 +157,9 @@ c(
 
 plot_umap(um2)
 ```
-Let's reorder them properly and color-code them. `group_patterns` maps group
-names to broader display categories, and `color_values` supplies one color for
-each category.
+Let's reorder them properly and then compare the plotting options. The numeric
+labels are assigned from the reordered factor levels, so label 1 corresponds to
+Node 7, label 2 to Node 10, and so on.
 ```{r}
 um2 <- set_umap_group_order(
   um,
@@ -119,28 +170,7 @@ c(
   "TX08001_Nodal_Root_Bud_Node_21"
 )
 )
-
-
-plot_umap(um2, 
-    group_patterns = list(
-        Node7 = "7",
-        Node10 = "10",
-        Node15 = "15",
-        Node21 = "21"
-    )
-    ,
-     color_values = c(
-        Node7 = "red",
-        Node10 = "blue",
-        Node15 = "darkgreen",
-        Node21 = "orange"
-    
-     )
-)
-
-plot_umap(um2)
 ```
-
 
 # Build a DESeq2 object
 
@@ -178,6 +208,9 @@ dds_out$rep_counts
 ## A single DESeq2 contrast
 The `run_contrast()` function runs a single DESeq2 contrast between two groups of the user's choice.
 
+The `lfc_thresh` argument is on the **log2 fold-change scale**. For example,
+`lfc_thresh = 2` requires an absolute log2 fold change greater than 2.
+
 If one does not wish to cluster the results into similar expression groups, then use the results, contrast$top_de, in the `build_heatmap` function and export that dataframe using the `write_heatmap_xlsx` function
 
 ```{r}
@@ -186,7 +219,9 @@ If one does not wish to cluster the results into similar expression groups, then
 contrast <- run_contrast(
   dds_out$dds,
   groupA = "TX08001_Nodal_Root_Bud_Node_7",
-  groupB = "TX08001_Nodal_Root_Bud_Node_21"
+  groupB = "TX08001_Nodal_Root_Bud_Node_21",
+  alpha = 0.05,
+  lfc_thresh = 2.32
 )
 
 #Top differentially expressed genes:
@@ -198,6 +233,10 @@ head(contrast$top_de)
 The `run_all_pairwise_contrasts()` function computes DESeq2 results for all
 pairwise comparisons among condition levels.
 This step can take a while depending on how many total contrasts it must compute.
+
+Unlike `run_contrast()`, `fc_thresh` is on the ordinary fold-change scale.
+For example, `fc_thresh = 3` retains changes greater than threefold in either
+direction by applying `abs(log2FoldChange) > log2(3)` internally.
 
 If one does not wish to cluster the results into similar expression groups, then use the results, pairwise$top_by_gene, in the `build_heatmap` function and export that data frame using the `write_heatmap_xlsx` function
 
@@ -243,14 +282,32 @@ mat_pairwise <- prepare_kmeans_matrix_topDE_TPMmean(
 dim(mat_pairwise)
 ```
 
+To compare expression patterns for exactly two groups, use `groups`. With two
+TPMmean columns, the function avoids row scaling and applies `log2(x + 1)` by
+default. This prevents two-column profiles from collapsing to the same scaled
+values.
+
+```{r two-group-kmeans, eval=FALSE}
+mat_two_groups <- prepare_kmeans_matrix_topDE_TPMmean(
+  top_de = contrast$top_de,
+  gene_expr = gene_expr,
+  groups = c(
+    "TX08001_Nodal_Root_Bud_Node_7",
+    "TX08001_Nodal_Root_Bud_Node_21"
+  )
+)
+```
+
 ## Determine the optimal number of clusters
 
 The `evaluate_kmeans_k` function helps determine the best number of clusters
 using silhouette and WSS diagnostics.
 
-4 clusters is the optimal number in both graphs
+Four clusters is the optimal number in both graphs. The function returns its
+plots and metadata invisibly, so they can also be saved for later inspection.
 ```{r}
-evaluate_kmeans_k(mat_pairwise, k_max = 10)
+k_eval <- evaluate_kmeans_k(mat_pairwise, k_max = 10, seed = 1)
+k_eval$meta
 ```
 
 ## Run k-means clustering
@@ -261,7 +318,7 @@ Then plot the median expression values across collection points for each cluster
 These can be either raw TPMmean values or log-transformed values.
 
 ```{r}
-km <- run_kmeans(mat_pairwise, centers = 4)
+km <- run_kmeans(mat_pairwise, centers = 4, seed = 1)
 
 head(km$clusters)
 
@@ -286,7 +343,7 @@ The `build_heatmap` function combines:
 - gene annotations
 
 into a single table suitable for heatmap visualization.
-We will look at all nodal root buds but if we wanted to view only some, we would use:  groups = c("TX08001_Nodal_Root_Bud_Node_7", "TX08001_Nodal_Root_Bud_Node_21")
+The first example includes all TPMmean columns.
 
 ```{r}
 heatmap_df <- build_heatmap(
@@ -300,21 +357,41 @@ heatmap_df <- build_heatmap(
 head(heatmap_df)
 ```
 
+The `groups` argument can restrict the exported expression columns to two
+conditions while retaining the selected differential-expression and annotation
+columns.
+
+```{r}
+heatmap_two_groups <- build_heatmap(
+  gene_expr = gene_expr,
+  clusters = km,
+  top_de = pairwise$top_by_gene,
+  annot_df = example_data$Sorghum_gene_annotation,
+  groups = c(
+    "TX08001_Nodal_Root_Bud_Node_7",
+    "TX08001_Nodal_Root_Bud_Node_21"
+  )
+)
+
+head(heatmap_two_groups)
+```
+
 ## Export heatmap dataframe
 
 The `write_heatmap_xlsx` function writes the heatmap table to Excel
 using built-in color rules for the TPMmean values.
 
-The function is given below but commented out. 
-The output file can be found in the extdata folder and details are shown below
+The write call is commented out because it requires the Python modules listed
+in the function documentation. `tempfile()` demonstrates a safe output path
+without writing into the package source directory.
 
 The heatmap Excel file contains colors and frozen panes. 
-To see these properly, open the file in Excel or LibreOffice."
+To see these properly, open the file in Excel or LibreOffice.
 ```{r}
-# write_heatmap_xlsx(
-#   heatmap_df,
-#   "heatmap_export.xlsx" #include full path to choose export folder
-# )
+xlsx_file <- tempfile(fileext = ".xlsx")
+
+# Requires pandas, xlsxwriter, and openpyxl in the configured Python environment:
+# write_heatmap_xlsx(heatmap_df, xlsx_file)
 
 # Heatmap Excel demo
 heatmap_demo_file <- system.file(
@@ -333,14 +410,19 @@ if (file.exists(heatmap_demo_file)) {
 # Export cluster gene lists for DAVID GO term analysis
 
 Cluster gene lists can be exported in a DAVID-compatible format. 
-The `export_clusters_david` function is given below commented out. 
-The output files can be accessed below
+The following example safely writes selected clusters to the R session's
+temporary directory.
 ```{r}
+david_dir <- file.path(tempdir(), "david_clusters")
 
-# export_clusters_david(
-#   heatmap_df,
-#   out_dir = "inst/examples/cluster_gene_lists"
-# )
+david_files <- export_clusters_david(
+  heatmap_df,
+  clusters = c(1, 2),
+  out_dir = david_dir,
+  quiet = TRUE
+)
+
+basename(david_files)
 
 # Cluster gene list demos
 cluster_demo_dir <- system.file(

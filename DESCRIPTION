@@ -31,8 +31,6 @@ Imports:
     dplyr,
     ggplot2,
     reshape2,
-    scales,
-    stringr,
     tibble,
     SummarizedExperiment,
     factoextra,
