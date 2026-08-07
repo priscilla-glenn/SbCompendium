@@ -58,3 +58,17 @@ corresponding to its group. The function supports two modes:
 Group order follows factor levels if \code{group} is a factor (e.g., after
 \code{set_umap_group_order()}); otherwise, it follows the order of first appearance.
 }
+\examples{
+umap_df <- data.frame(
+  UMAP1 = c(-1, -0.8, 0.8, 1),
+  UMAP2 = c(0.1, -0.1, 0.2, -0.2),
+  group = c("control", "control", "treated", "treated")
+)
+
+plot_umap(umap_df)
+plot_umap(
+  umap_df,
+  group_patterns = list(Control = "control", Treated = "treated"),
+  color_values = c(Control = "steelblue", Treated = "firebrick")
+)
+}

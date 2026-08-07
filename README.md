@@ -31,29 +31,45 @@ This repository includes large files tracked with **Git LFS**.
 - Or via command line:
   - git lfs install
 
-## Clone the repo with LFS (cpmmand line)
+## Clone the repo with LFS (command line)
+
+```sh
 git clone https://github.com/priscilla-glenn/SbCompendium.git
 
 cd SbCompendium
 
 git lfs pull
+```
 
-In Rstudio, once the repo is cloned: change the path to the folder where you cloned the repo
-- devtools::install_local("path/to/SbCompendium", build_vignettes = FALSE)
+In RStudio, once the repository is cloned, change the path below to the folder
+where you cloned it:
 
+```r
+devtools::install_local("path/to/SbCompendium", build_vignettes = FALSE)
 library(SbCompendium)
+```
 
 ## How to load the compendium and an example dataset
+
+```r
 data("example_data")
 
 experiment <- importTable(example_data[["nodal_buds_28"]])
 
 head(experiment)
+```
 
 
 ## To load the full compendium dataset
+
+```r
 data("sorghum_compendium")
-- it will load into your environment as sorghum_compendium and each experiment can be viewed. ex: sorghum_compendium$nodal_buds_28
+```
+
+This creates `sorghum_compendium` in your environment. Access an experiment,
+for example, with `sorghum_compendium$nodal_buds_28`. Use
+`list_compendium(sorghum_compendium)` to list all experiments or supply
+`pattern` to search their names.
 
 # Please check the vignette and manual to see full details and usage for each function
 Experiments in the compendium include:
@@ -98,4 +114,4 @@ Experiments in the compendium include:
 - ccSM100_3*
 - temp_1and2*
 
-*These experiments do not included count data for DEseq analysis
+*These experiments do not include count data for DESeq2 analysis.

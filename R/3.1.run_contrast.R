@@ -3,8 +3,9 @@
 #' @param dds A DESeq2::DESeqDataSet with a `condition` column in colData.
 #' @param groupA,groupB Condition levels to compare (groupA vs groupB).
 #' @param alpha Adjusted p-value cutoff.
-#' @param lfc_thresh Absolute log2FC cutoff.
-#' column in `colData(dds)` used for contrasts.
+#' @param lfc_thresh Numeric. Absolute log2 fold-change cutoff. A gene is
+#'   included in `top_de` when `padj < alpha` and
+#'   `abs(log2FoldChange) > lfc_thresh`.
 #'
 #' @return A list with:
 #'   - res: DESeqResults

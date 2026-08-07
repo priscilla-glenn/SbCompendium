@@ -52,7 +52,6 @@ either groupA or groupB (fixed substring match).}
 \itemize{
 \item "GeneIDV3"
 \item "abs_log2FoldChange" (only if log2FoldChange exists)
-\item any existing column name in the output
 }}
 }
 \value{

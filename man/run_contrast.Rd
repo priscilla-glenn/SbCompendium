@@ -13,8 +13,9 @@ run_contrast(dds, groupA, groupB, alpha = 0.05, lfc_thresh = 2.32)
 
 \item{alpha}{Adjusted p-value cutoff.}
 
-\item{lfc_thresh}{Absolute log2FC cutoff.
-column in \code{colData(dds)} used for contrasts.}
+\item{lfc_thresh}{Numeric. Absolute log2 fold-change cutoff. A gene is
+included in \code{top_de} when \code{padj < alpha} and
+\code{abs(log2FoldChange) > lfc_thresh}.}
 }
 \value{
 A list with:

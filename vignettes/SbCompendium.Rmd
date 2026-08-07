@@ -74,7 +74,7 @@ head(gene_expr)
 `run_umap_tpm` can be used to visualize sample relationships using replicate-level TPM
 expression and determine if there are any outliers.
 In this example, each of the nodal root bud groups cluster near one another. 
-We can also easily seed that group 4, node 21 only has 2 reps instead of 3
+We can also easily see that group 4, node 21, has two replicates instead of three.
 In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes
 ```{r}
 um <- run_umap_tpm(gene_expr, n_neighbors = 3, seed = 10)
@@ -106,7 +106,9 @@ c(
 
 plot_umap(um2)
 ```
-lets reorder them properly now and color code them
+Let's reorder them properly and color-code them. `group_patterns` maps group
+names to broader display categories, and `color_values` supplies one color for
+each category.
 ```{r}
 um2 <- set_umap_group_order(
   um,
@@ -150,10 +152,10 @@ Genes can optionally be filtered using a TPM threshold.
 `dds_out` will include:
 - the DESeq2 object (dds)
 - a subset of expression values (subset_df)
-- column name helpers (tpm_cols, counts_cols)
+- column name helpers (`tpm_cols`, `count_cols`)
 - grouping information (groups, sample_names, rep_counts)
-- sample_table used in DEseq analysis
-- colData used in DEseq analysis
+- `sample_table` used in DESeq2 analysis
+- `colData` used in DESeq2 analysis
 - chosen TPM threshold (TPM_thresh)
 
 ```{r}
@@ -195,7 +197,7 @@ head(contrast$top_de)
 
 The `run_all_pairwise_contrasts()` function computes DESeq2 results for all
 pairwise comparisons among condition levels.
-This step can take a while depending on how many total constrasts it must compute
+This step can take a while depending on how many total contrasts it must compute.
 
 If one does not wish to cluster the results into similar expression groups, then use the results, pairwise$top_by_gene, in the `build_heatmap` function and export that data frame using the `write_heatmap_xlsx` function
 
@@ -255,7 +257,8 @@ evaluate_kmeans_k(mat_pairwise, k_max = 10)
 
 Once a cluster number is chosen, run k-means using the `run_kmeans` function and determine which genes are in which cluster.
 
-Then print a graph with the median expression values across the collection points for each cluster. This can either be the raw TPMmean values or log transformmed. 
+Then plot the median expression values across collection points for each cluster.
+These can be either raw TPMmean values or log-transformed values.
 
 ```{r}
 km <- run_kmeans(mat_pairwise, centers = 4)
@@ -290,7 +293,7 @@ heatmap_df <- build_heatmap(
   gene_expr = gene_expr,
   clusters = km,
   top_de = pairwise$top_by_gene,
-  fc_cols = c( "log2FoldChange","contrast", "padj", "log2FoldChange"),
+  fc_cols = c("FC", "log2FoldChange", "contrast", "padj"),
   annot_df = example_data$Sorghum_gene_annotation
 )
 

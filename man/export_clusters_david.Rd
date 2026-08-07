@@ -16,7 +16,7 @@ export_clusters_david(
 }
 \arguments{
 \item{df}{A data.frame containing at least \code{GeneIDV3} and \code{cluster} columns
-(e.g., output from \code{build_heatmap_cluster_export()}).}
+(e.g., output from \code{build_heatmap()}).}
 
 \item{clusters}{Integer vector of cluster numbers to export. If NULL (default),
 exports all unique clusters found in \code{df$cluster}.}

@@ -70,3 +70,24 @@ selects the top variable genes by MAD, then runs UMAP on samples.
 \details{
 Gene identifiers may be stored either in a \code{GeneIDV3} column (default) OR as row names.
 }
+\examples{
+\donttest{
+example_tpm <- data.frame(
+  GeneIDV3 = paste0("gene", 1:6),
+  control.1_TPM = c(8, 2, 5, 1, 9, 3),
+  control.2_TPM = c(7, 3, 6, 1, 8, 4),
+  treated.1_TPM = c(2, 8, 3, 7, 2, 9),
+  treated.2_TPM = c(3, 9, 2, 8, 1, 8)
+)
+
+um <- run_umap_tpm(
+  example_tpm,
+  n_top_genes = 5,
+  n_neighbors = 2,
+  seed = 1,
+  return_input = TRUE
+)
+head(um$umap_df)
+um$sample_table
+}
+}

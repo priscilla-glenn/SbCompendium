@@ -37,6 +37,26 @@
 #' @export
 #'
 #' @importFrom stats mad
+#' @examples
+#' \donttest{
+#' example_tpm <- data.frame(
+#'   GeneIDV3 = paste0("gene", 1:6),
+#'   control.1_TPM = c(8, 2, 5, 1, 9, 3),
+#'   control.2_TPM = c(7, 3, 6, 1, 8, 4),
+#'   treated.1_TPM = c(2, 8, 3, 7, 2, 9),
+#'   treated.2_TPM = c(3, 9, 2, 8, 1, 8)
+#' )
+#'
+#' um <- run_umap_tpm(
+#'   example_tpm,
+#'   n_top_genes = 5,
+#'   n_neighbors = 2,
+#'   seed = 1,
+#'   return_input = TRUE
+#' )
+#' head(um$umap_df)
+#' um$sample_table
+#' }
 run_umap_tpm <- function(df,
                          GeneIDV3_col = "GeneIDV3",
                          tpm_cols = NULL,
@@ -303,6 +323,19 @@ set_umap_group_order <- function(umap_obj, group_order) {
 #' @return A ggplot object.
 #'
 #' @export
+#' @examples
+#' umap_df <- data.frame(
+#'   UMAP1 = c(-1, -0.8, 0.8, 1),
+#'   UMAP2 = c(0.1, -0.1, 0.2, -0.2),
+#'   group = c("control", "control", "treated", "treated")
+#' )
+#'
+#' plot_umap(umap_df)
+#' plot_umap(
+#'   umap_df,
+#'   group_patterns = list(Control = "control", Treated = "treated"),
+#'   color_values = c(Control = "steelblue", Treated = "firebrick")
+#' )
 plot_umap <- function(
         x,
         text_size = 5,
