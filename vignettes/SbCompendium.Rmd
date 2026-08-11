@@ -224,7 +224,8 @@ qc <- plot_deseq_qc(
   cor_method = "pearson",
   heatmap_scale = "row",
   show_rownames = FALSE,
-  cor_cellheight = 20
+  cor_cellheight = 20,
+  print_plots = FALSE
 )
 
 # Inspect or reuse returned results
