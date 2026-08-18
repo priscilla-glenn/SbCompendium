@@ -10,7 +10,7 @@
 #' - only the TPMmean columns corresponding to two DESeq2 group names
 #'   (pass `groups = c(groupA, groupB)`).
 #'
-#' @param gene_expr data.frame/matrix with GeneIDV3s as rownames and TPMmean columns.
+#' @param gene_expr A `SummarizedExperiment`, or a legacy data.frame/matrix.
 #' @param clusters Optional. Output from run_kmeans(), a data.frame with GeneIDV3 + cluster,
 #'   or a named vector of cluster assignments. If NULL, cluster column is omitted.
 #' @param top_de Optional data.frame containing GeneIDV3 and FC/DE columns.
@@ -29,6 +29,8 @@
 #' @param secondary_sort Character. One of:
 #'   - "GeneIDV3"
 #'   - "abs_log2FoldChange" (only if log2FoldChange exists)
+#' @param group_by `colData` field used to calculate condition means. For a
+#'   `SummarizedExperiment`, `rowData` supplies annotations by default.
 #'
 #' @return data.frame with GeneIDV3, optional cluster, optional FC, optional annotations,
 #'   TPMmean columns (all or group-filtered).
@@ -149,12 +151,30 @@ build_heatmap <- function(gene_expr,
                           groups = NULL,
                           cluster_col_name = "cluster",
                           sort_by_cluster = TRUE,
-                          secondary_sort = c("GeneIDV3", "abs_log2FoldChange")) {
+                          secondary_sort = c("GeneIDV3", "abs_log2FoldChange"),
+                          group_by = "condition") {
 
     secondary_sort <- match.arg(secondary_sort)
 
+    if (inherits(gene_expr, "SummarizedExperiment")) {
+        se <- gene_expr
+        if (is.null(annot_df)) {
+            annot_df <- as.data.frame(SummarizedExperiment::rowData(se))
+            if (!GeneIDV3_col %in% names(annot_df)) {
+                annot_df[[GeneIDV3_col]] <- rownames(se)
+            }
+        }
+        gene_expr <- summarize_tpm(se, group_by = group_by)
+        if (!is.null(groups)) {
+            tpmmean_cols <- groups
+            groups <- NULL
+        } else if (is.null(tpmmean_cols)) {
+            tpmmean_cols <- colnames(gene_expr)
+        }
+    }
+
     if (!is.data.frame(gene_expr) && !is.matrix(gene_expr)) {
-        stop("gene_expr must be a data.frame or matrix.", call. = FALSE)
+        stop("gene_expr must be a SummarizedExperiment, data.frame, or matrix.", call. = FALSE)
     }
 
     GeneIDV3s <- rownames(gene_expr)
@@ -334,6 +354,7 @@ build_heatmap <- function(gene_expr,
     }
 
     rownames(out) <- out$GeneIDV3
+    attr(out, "expression_columns") <- tpmmean_cols
     out
 }
 
@@ -344,8 +365,8 @@ build_heatmap <- function(gene_expr,
 #'   a relative path. If a relative path is provided, the file is saved
 #'   to the current working directory (see getwd()).
 #' @param sheet Sheet name.
-#' @param expr_cols Expression columns to color. If NULL, auto-detect columns
-#'   containing "TPMmean".
+#' @param expr_cols Expression columns to color. If NULL, uses the expression
+#'   column attribute created by `build_heatmap()`.
 #' @param cluster_col_name Cluster column name, used only for reference (optional).
 #' @param replace_zero_annotation_with_blank Replace 0 with blank in
 #'   non-TPMmean columns.
@@ -360,6 +381,18 @@ write_heatmap_xlsx <- function(export_df,
                                replace_zero_annotation_with_blank = TRUE) {
 
     stopifnot(is.data.frame(export_df))
+    if (is.null(expr_cols)) {
+        expr_cols <- attr(export_df, "expression_columns")
+    }
+    if (is.null(expr_cols) || !length(expr_cols)) {
+        stop("expr_cols must be supplied unless export_df came directly from build_heatmap().",
+             call. = FALSE)
+    }
+    missing_expr <- setdiff(expr_cols, names(export_df))
+    if (length(missing_expr)) {
+        stop("expr_cols not found in export_df: ", paste(missing_expr, collapse = ", "),
+             call. = FALSE)
+    }
 
     # --- Safe UTF-8 conversion ---
     export_df <- as.data.frame(export_df, stringsAsFactors = FALSE)

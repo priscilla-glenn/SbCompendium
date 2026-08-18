@@ -17,11 +17,13 @@ run_umap_tpm(
   min_dist = 0.1,
   metric = "euclidean",
   make_labels = TRUE,
-  return_input = FALSE
+  return_input = FALSE,
+  group_by = "condition"
 )
 }
 \arguments{
-\item{df}{A data.frame containing gene IDs (column or rownames) and replicate-level \verb{_TPM} columns.}
+\item{df}{A \code{SummarizedExperiment} containing a \code{TPM} assay, or a legacy
+data.frame containing gene IDs and replicate-level \verb{_TPM} columns.}
 
 \item{GeneIDV3_col}{Character. Name of gene ID column if present. Default "GeneIDV3".}
 
@@ -47,6 +49,8 @@ prior to scaling/MAD selection.}
 \item{make_labels}{Logical. If TRUE (default), label = \code{"{group}.r{rep}"}.}
 
 \item{return_input}{Logical. If TRUE, includes the aggregated TPM matrix in output. Default FALSE.}
+
+\item{group_by}{Column in \code{colData(df)} containing the biological condition.}
 }
 \value{
 A list with:

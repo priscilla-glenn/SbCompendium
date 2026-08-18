@@ -1,14 +1,13 @@
 #' Build a DESeq2 object from a compendium expression table
 #'
-#' Takes an expression table containing columns ending in `_TPM` and `_counts`,
-#' filters genes by a TPM threshold (max TPM across samples), and constructs a
-#' DESeq2::DESeqDataSet with a `~ condition` design where condition is
-#' inferred from sample base names.
+#' Takes a `SummarizedExperiment` with `TPM` and `counts` assays, filters genes
+#' by maximum TPM, and constructs a DESeq2 dataset using its `colData`. Legacy
+#' expression tables with `_TPM` and `_counts` columns are also supported.
 #'
 #' The input table should contain genes as rows and expression columns ending
 #' in `_TPM` and `_counts`. Gene identifiers should be stored as row names.
 #'
-#' @param df A data.frame/tibble containing expression columns.
+#' @param df A `SummarizedExperiment`, or a legacy data.frame/tibble.
 #' @param TPM_thresh Numeric. Genes are kept if max TPM across `_TPM`
 #'   columns is > TPM_thresh. Default = 5.
 #' @param ref_level Optional character. If supplied, sets the reference
@@ -67,11 +66,57 @@ build_deseq <- function(df,
                         design_formula = ~ condition,
                         run_deseq = TRUE) {
 
-    stopifnot(is.data.frame(df))
-
-    if (!is.numeric(TPM_thresh) || length(TPM_thresh) != 1) {
+    if (!is.numeric(TPM_thresh) || length(TPM_thresh) != 1 || is.na(TPM_thresh)) {
         stop("TPM_thresh must be a single numeric value.", call. = FALSE)
     }
+
+    if (inherits(df, "SummarizedExperiment")) {
+        needed <- c("TPM", "counts")
+        missing_assays <- setdiff(needed, SummarizedExperiment::assayNames(df))
+        if (length(missing_assays)) {
+            stop("Missing assay(s): ", paste(missing_assays, collapse = ", "), call. = FALSE)
+        }
+        sample_data <- as.data.frame(SummarizedExperiment::colData(df))
+        if (!"condition" %in% names(sample_data)) {
+            stop("colData must contain a 'condition' column.", call. = FALSE)
+        }
+        condition <- factor(sample_data$condition, levels = unique(sample_data$condition))
+        if (!is.null(ref_level)) {
+            if (!ref_level %in% levels(condition)) {
+                stop("ref_level '", ref_level, "' not found. Available levels: ",
+                     paste(levels(condition), collapse = ", "), call. = FALSE)
+            }
+            condition <- stats::relevel(condition, ref = ref_level)
+        }
+        sample_data$condition <- condition
+        rownames(sample_data) <- colnames(df)
+        tpm_mat <- as.matrix(SummarizedExperiment::assay(df, "TPM"))
+        keep <- matrixStats::rowMaxs(tpm_mat, useNames = FALSE) > TPM_thresh
+        subset_df <- df[keep, , drop = FALSE]
+        countData_mat <- as.matrix(SummarizedExperiment::assay(subset_df, "counts"))
+        if (anyNA(countData_mat) || any(countData_mat < 0)) {
+            stop("The counts assay contains NA or negative values.", call. = FALSE)
+        }
+        storage.mode(countData_mat) <- "integer"
+        colData <- S4Vectors::DataFrame(sample_data)
+        dds <- DESeq2::DESeqDataSetFromMatrix(
+            countData = countData_mat, colData = colData, design = design_formula
+        )
+        if (isTRUE(run_deseq)) dds <- DESeq2::DESeq(dds)
+        sample_ids <- colnames(subset_df)
+        return(list(
+            dds = dds, subset_df = subset_df,
+            tpm_cols = sample_ids, count_cols = sample_ids,
+            sample_names = as.character(condition), colData = colData,
+            sample_table = data.frame(sample = sample_ids,
+                                      group = as.character(condition),
+                                      stringsAsFactors = FALSE),
+            groups = levels(condition), rep_counts = table(condition),
+            TPM_thresh = TPM_thresh
+        ))
+    }
+
+    stopifnot(is.data.frame(df))
 
     # Keep only TPM + count columns
     expr_cols <- grep("(_TPM$|_counts$)", names(df), value = TRUE)

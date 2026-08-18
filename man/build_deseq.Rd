@@ -13,7 +13,7 @@ build_deseq(
 )
 }
 \arguments{
-\item{df}{A data.frame/tibble containing expression columns.}
+\item{df}{A \code{SummarizedExperiment}, or a legacy data.frame/tibble.}
 
 \item{TPM_thresh}{Numeric. Genes are kept if max TPM across \verb{_TPM}
 columns is > TPM_thresh. Default = 5.}
@@ -43,10 +43,9 @@ A list containing:
 }
 }
 \description{
-Takes an expression table containing columns ending in \verb{_TPM} and \verb{_counts},
-filters genes by a TPM threshold (max TPM across samples), and constructs a
-DESeq2::DESeqDataSet with a \code{~ condition} design where condition is
-inferred from sample base names.
+Takes a \code{SummarizedExperiment} with \code{TPM} and \code{counts} assays, filters genes
+by maximum TPM, and constructs a DESeq2 dataset using its \code{colData}. Legacy
+expression tables with \verb{_TPM} and \verb{_counts} columns are also supported.
 }
 \details{
 The input table should contain genes as rows and expression columns ending

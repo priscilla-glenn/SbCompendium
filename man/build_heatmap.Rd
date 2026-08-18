@@ -17,11 +17,12 @@ build_heatmap(
   groups = NULL,
   cluster_col_name = "cluster",
   sort_by_cluster = TRUE,
-  secondary_sort = c("GeneIDV3", "abs_log2FoldChange")
+  secondary_sort = c("GeneIDV3", "abs_log2FoldChange"),
+  group_by = "condition"
 )
 }
 \arguments{
-\item{gene_expr}{data.frame/matrix with GeneIDV3s as rownames and TPMmean columns.}
+\item{gene_expr}{A \code{SummarizedExperiment}, or a legacy data.frame/matrix.}
 
 \item{clusters}{Optional. Output from run_kmeans(), a data.frame with GeneIDV3 + cluster,
 or a named vector of cluster assignments. If NULL, cluster column is omitted.}
@@ -53,6 +54,9 @@ either groupA or groupB (fixed substring match).}
 \item "GeneIDV3"
 \item "abs_log2FoldChange" (only if log2FoldChange exists)
 }}
+
+\item{group_by}{\code{colData} field used to calculate condition means. For a
+\code{SummarizedExperiment}, \code{rowData} supplies annotations by default.}
 }
 \value{
 data.frame with GeneIDV3, optional cluster, optional FC, optional annotations,

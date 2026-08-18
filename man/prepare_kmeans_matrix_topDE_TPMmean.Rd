@@ -16,13 +16,15 @@ prepare_kmeans_matrix_topDE_TPMmean(
   scale_rows_if_gt2 = TRUE,
   log_transform_if_le2 = TRUE,
   scale_cols = FALSE,
-  drop_zero_var = TRUE
+  drop_zero_var = TRUE,
+  group_by = "condition"
 )
 }
 \arguments{
 \item{top_de}{A data.frame containing a gene ID column (default "GeneIDV3").}
 
-\item{gene_expr}{A data.frame/matrix with GeneIDV3s as rownames and TPMmean columns.}
+\item{gene_expr}{A \code{SummarizedExperiment}, or a legacy data.frame/matrix
+with GeneIDV3s as rownames and TPMmean columns.}
 
 \item{GeneIDV3_col}{Character. Name of the gene ID column in \code{top_de}. Default "GeneIDV3".}
 
@@ -48,6 +50,9 @@ when there are >2 TPMmean columns.}
 \item{scale_cols}{Logical. If TRUE, scale each sample (column) across genes (usually FALSE).}
 
 \item{drop_zero_var}{Logical. If TRUE (default), drop genes with zero variance across TPMmean columns.}
+
+\item{group_by}{\code{colData} field used to calculate condition means for a
+\code{SummarizedExperiment}.}
 }
 \value{
 A numeric matrix: rows = genes, cols = TPMmean samples/conditions.

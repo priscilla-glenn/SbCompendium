@@ -6,7 +6,8 @@
 #' - If <=2 TPMmean columns: avoid row scaling (prevents ±0.707 collapse); optionally log2(x+1)
 #'
 #' @param top_de A data.frame containing a gene ID column (default "GeneIDV3").
-#' @param gene_expr A data.frame/matrix with GeneIDV3s as rownames and TPMmean columns.
+#' @param gene_expr A `SummarizedExperiment`, or a legacy data.frame/matrix
+#'   with GeneIDV3s as rownames and TPMmean columns.
 #' @param GeneIDV3_col Character. Name of the gene ID column in `top_de`. Default "GeneIDV3".
 #' @param tpmmean_cols Optional character vector of TPMmean column names to use.
 #'   If NULL, columns are detected via `.get_tpmmean_cols(gene_expr)`.
@@ -22,6 +23,8 @@
 #' @param drop_zero_var Logical. If TRUE (default), drop genes with zero variance across TPMmean columns.
 #' @param groups Optional character vector of exactly two group-name substrings.
 #'   When supplied, only TPMmean columns containing either substring are used.
+#' @param group_by `colData` field used to calculate condition means for a
+#'   `SummarizedExperiment`.
 #'
 #' @return A numeric matrix: rows = genes, cols = TPMmean samples/conditions.
 #'
@@ -73,12 +76,23 @@ prepare_kmeans_matrix_topDE_TPMmean <- function(top_de,
                                                 scale_rows_if_gt2 = TRUE,
                                                 log_transform_if_le2 = TRUE,
                                                 scale_cols = FALSE,
-                                                drop_zero_var = TRUE) {
+                                                drop_zero_var = TRUE,
+                                                group_by = "condition") {
 
     stopifnot(is.data.frame(top_de))
 
+    if (inherits(gene_expr, "SummarizedExperiment")) {
+        gene_expr <- summarize_tpm(gene_expr, group_by = group_by)
+        if (!is.null(groups)) {
+            tpmmean_cols <- groups
+            groups <- NULL
+        } else if (is.null(tpmmean_cols)) {
+            tpmmean_cols <- colnames(gene_expr)
+        }
+    }
+
     if (!is.data.frame(gene_expr) && !is.matrix(gene_expr)) {
-        stop("gene_expr must be a data.frame or matrix.", call. = FALSE)
+        stop("gene_expr must be a SummarizedExperiment, data.frame, or matrix.", call. = FALSE)
     }
 
     na_action <- match.arg(na_action)
@@ -472,13 +486,13 @@ run_kmeans <- function(mat,
 }
 
 
-#' Plot median TPMmean expression per k-means cluster
+#' Plot median TPM expression per k-means cluster
 #'
 #' Uses cluster assignments from k-means but pulls TRUE TPMmean values
 #' from gene_expr (not scaled/processed matrices). The trailing `_TPMmean`
 #' suffix is removed automatically from displayed x-axis labels.
 #'
-#' @param gene_expr Data.frame/matrix with GeneIDV3 as rownames and includes TPMmean columns
+#' @param gene_expr A `SummarizedExperiment`, or a legacy data.frame/matrix.
 #' @param clusters Data.frame with GeneIDV3 and cluster assignments
 #' @param GeneIDV3_col Character. Default "GeneIDV3" may be Gene_ID
 #' @param cluster_col Character. Default "cluster"
@@ -486,6 +500,7 @@ run_kmeans <- function(mat,
 #'   auto-detects columns whose names end in `TPMmean`.
 #' @param log_transform Logical. Apply log2(TPMmean + 1). Default TRUE
 #' @param title Plot title
+#' @param group_by `colData` field used to calculate condition means.
 #'
 #' @return ggplot object
 #' @export
@@ -495,10 +510,16 @@ plot_cluster_median_profiles_tpm <- function(gene_expr,
                                              cluster_col = "cluster",
                                              tpm_cols = NULL,
                                              log_transform = TRUE,
-                                             title = "Cluster median TPM expression profiles") {
+                                             title = "Cluster median TPM expression profiles",
+                                             group_by = "condition") {
+
+    is_se <- inherits(gene_expr, "SummarizedExperiment")
+    if (is_se) {
+        gene_expr <- summarize_tpm(gene_expr, group_by = group_by)
+    }
 
     if (!is.data.frame(gene_expr) && !is.matrix(gene_expr)) {
-        stop("gene_expr must be a data.frame or matrix.", call. = FALSE)
+        stop("gene_expr must be a SummarizedExperiment, data.frame, or matrix.", call. = FALSE)
     }
 
     gene_ids <- rownames(gene_expr)
@@ -511,11 +532,12 @@ plot_cluster_median_profiles_tpm <- function(gene_expr,
     # Select TPM columns
     # ------------------------------------------------------------
     if (is.null(tpm_cols)) {
-        tpm_cols <- grep("TPMmean$", colnames(gene_expr), value = TRUE)
+        tpm_cols <- if (is_se) colnames(gene_expr) else
+            grep("TPMmean$", colnames(gene_expr), value = TRUE)
     }
 
     if (length(tpm_cols) == 0) {
-        stop("No TPMmean columns found in gene_expr.", call. = FALSE)
+        stop("No mean TPM columns found in gene_expr.", call. = FALSE)
     }
 
     # ------------------------------------------------------------
@@ -589,7 +611,7 @@ plot_cluster_median_profiles_tpm <- function(gene_expr,
         ggplot2::labs(
             title = title,
             x = "Condition",
-            y = ifelse(log_transform, "log2(TPMmean + 1)", "TPMmean"),
+            y = ifelse(log_transform, "log2(mean TPM + 1)", "mean TPM"),
             color = "Cluster"
         ) +
         ggplot2::scale_x_discrete(

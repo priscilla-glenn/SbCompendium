@@ -6,7 +6,8 @@
 #'
 #' Gene identifiers may be stored either in a `GeneIDV3` column (default) OR as row names.
 #'
-#' @param df A data.frame containing gene IDs (column or rownames) and replicate-level `_TPM` columns.
+#' @param df A `SummarizedExperiment` containing a `TPM` assay, or a legacy
+#'   data.frame containing gene IDs and replicate-level `_TPM` columns.
 #' @param GeneIDV3_col Character. Name of gene ID column if present. Default "GeneIDV3".
 #' @param tpm_cols Optional character vector of `_TPM` column names. If NULL, auto-detects.
 #' @param aggregate_fun Function used to aggregate to GeneIDV3. Default `sum`.
@@ -20,6 +21,7 @@
 #' @param metric Character. UMAP distance metric. Default "euclidean".
 #' @param make_labels Logical. If TRUE (default), label = \code{"{group}.r{rep}"}.
 #' @param return_input Logical. If TRUE, includes the aggregated TPM matrix in output. Default FALSE.
+#' @param group_by Column in `colData(df)` containing the biological condition.
 #'
 #' @return A list with:
 #' \itemize{
@@ -69,9 +71,45 @@ run_umap_tpm <- function(df,
                          min_dist = 0.1,
                          metric = "euclidean",
                          make_labels = TRUE,
-                         return_input = FALSE) {
+                         return_input = FALSE,
+                         group_by = "condition") {
 
-    stopifnot(is.data.frame(df))
+    is_se <- inherits(df, "SummarizedExperiment")
+
+    if (is_se) {
+        if (!"TPM" %in% SummarizedExperiment::assayNames(df)) {
+            stop("The SummarizedExperiment must contain a 'TPM' assay.", call. = FALSE)
+        }
+        sample_data <- as.data.frame(SummarizedExperiment::colData(df))
+        if (!group_by %in% names(sample_data)) {
+            stop("colData is missing group_by = '", group_by, "'.", call. = FALSE)
+        }
+        data_ag <- as.matrix(SummarizedExperiment::assay(df, "TPM"))
+        tpm_cols <- colnames(data_ag)
+        replicate <- if ("replicate" %in% names(sample_data)) {
+            sample_data$replicate
+        } else {
+            ave(seq_len(nrow(sample_data)), sample_data[[group_by]], FUN = seq_along)
+        }
+        condition <- factor(sample_data[[group_by]],
+                            levels = unique(sample_data[[group_by]]))
+        meta_samples <- list(
+            tpm_cols = tpm_cols,
+            sample_names = as.character(condition),
+            condition = condition,
+            rep_counts = table(condition),
+            rep_id = replicate,
+            sample_table = data.frame(
+                sample = tpm_cols,
+                group = as.character(condition),
+                rep = replicate,
+                stringsAsFactors = FALSE
+            )
+        )
+    } else {
+        if (!is.data.frame(df)) {
+            stop("df must be a SummarizedExperiment or data.frame.", call. = FALSE)
+        }
 
     # Accept GeneIDV3 either as a column or as rownames
     if (!GeneIDV3_col %in% names(df)) {
@@ -101,6 +139,8 @@ run_umap_tpm <- function(df,
         stop("Need at least 2 replicate-level '_TPM' columns for UMAP.", call. = FALSE)
     }
 
+    }
+
     # Validate UMAP params early
     if (!is.numeric(n_neighbors) || length(n_neighbors) != 1 || n_neighbors < 2) {
         stop("n_neighbors must be a single integer >= 2.", call. = FALSE)
@@ -111,20 +151,17 @@ run_umap_tpm <- function(df,
         stop("min_dist must be a single numeric value >= 0.", call. = FALSE)
     }
 
-    # Keep only GeneIDV3 + TPM columns
-    data2 <- df[, c(GeneIDV3_col, tpm_cols), drop = FALSE]
-    names(data2)[names(data2) == GeneIDV3_col] <- "GeneIDV3"
-
-    # Aggregate to GeneIDV3
-    data_ag <- stats::aggregate(. ~ GeneIDV3, data = data2, FUN = aggregate_fun)
-
-    row_names <- data_ag$GeneIDV3
-    data_ag <- data_ag[, setdiff(names(data_ag), "GeneIDV3"), drop = FALSE]
-    data_ag <- as.data.frame(data_ag)
-    rownames(data_ag) <- row_names
-
-    # Infer groups/replicates from TPM column names
-    meta_samples <- .infer_groups_from_tpm_cols(colnames(data_ag))
+    if (!is_se) {
+        # Keep only GeneIDV3 + TPM columns and aggregate duplicate gene IDs.
+        data2 <- df[, c(GeneIDV3_col, tpm_cols), drop = FALSE]
+        names(data2)[names(data2) == GeneIDV3_col] <- "GeneIDV3"
+        data_ag <- stats::aggregate(. ~ GeneIDV3, data = data2, FUN = aggregate_fun)
+        row_names <- data_ag$GeneIDV3
+        data_ag <- data_ag[, setdiff(names(data_ag), "GeneIDV3"), drop = FALSE]
+        data_ag <- as.data.frame(data_ag)
+        rownames(data_ag) <- row_names
+        meta_samples <- .infer_groups_from_tpm_cols(colnames(data_ag))
+    }
 
     # Optional TPM threshold filter (max TPM across samples)
     if (!is.null(TPM_thresh)) {

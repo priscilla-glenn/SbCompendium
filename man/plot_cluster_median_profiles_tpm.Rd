@@ -2,7 +2,7 @@
 % Please edit documentation in R/4.0.Kmean_functions.R
 \name{plot_cluster_median_profiles_tpm}
 \alias{plot_cluster_median_profiles_tpm}
-\title{Plot median TPMmean expression per k-means cluster}
+\title{Plot median TPM expression per k-means cluster}
 \usage{
 plot_cluster_median_profiles_tpm(
   gene_expr,
@@ -11,11 +11,12 @@ plot_cluster_median_profiles_tpm(
   cluster_col = "cluster",
   tpm_cols = NULL,
   log_transform = TRUE,
-  title = "Cluster median TPM expression profiles"
+  title = "Cluster median TPM expression profiles",
+  group_by = "condition"
 )
 }
 \arguments{
-\item{gene_expr}{Data.frame/matrix with GeneIDV3 as rownames and includes TPMmean columns}
+\item{gene_expr}{A \code{SummarizedExperiment}, or a legacy data.frame/matrix.}
 
 \item{clusters}{Data.frame with GeneIDV3 and cluster assignments}
 
@@ -29,6 +30,8 @@ auto-detects columns whose names end in \code{TPMmean}.}
 \item{log_transform}{Logical. Apply log2(TPMmean + 1). Default TRUE}
 
 \item{title}{Plot title}
+
+\item{group_by}{\code{colData} field used to calculate condition means.}
 }
 \value{
 ggplot object

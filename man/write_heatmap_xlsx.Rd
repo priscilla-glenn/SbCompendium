@@ -22,8 +22,8 @@ to the current working directory (see getwd()).}
 
 \item{sheet}{Sheet name.}
 
-\item{expr_cols}{Expression columns to color. If NULL, auto-detect columns
-containing "TPMmean".}
+\item{expr_cols}{Expression columns to color. If NULL, uses the expression
+column attribute created by \code{build_heatmap()}.}
 
 \item{cluster_col_name}{Cluster column name, used only for reference (optional).}
 
