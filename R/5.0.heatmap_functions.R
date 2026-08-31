@@ -195,8 +195,36 @@ build_heatmap <- function(gene_expr,
     }
 
     # Expression df (base)
+    # Expression df (base)
     out <- as.data.frame(gene_expr[, tpmmean_cols, drop = FALSE])
     out$GeneIDV3 <- rownames(out)
+
+    # If top_de is provided, restrict expression data to those genes only
+    if (!is.null(top_de)) {
+
+        if (!GeneIDV3_col %in% colnames(top_de)) {
+            stop(
+                "top_de does not contain GeneID column '",
+                GeneIDV3_col,
+                "'.",
+                call. = FALSE
+            )
+        }
+
+        keep_genes <- intersect(
+            out$GeneIDV3,
+            top_de[[GeneIDV3_col]]
+        )
+
+        out <- out[out$GeneIDV3 %in% keep_genes, , drop = FALSE]
+
+        if (nrow(out) == 0) {
+            stop(
+                "No genes from top_de were found in gene_expr.",
+                call. = FALSE
+            )
+        }
+    }
 
     # Optional clusters
     if (!is.null(clusters)) {

@@ -1,6 +1,6 @@
 # SbCompendium
 
-If you use the SbCompendium package/data, please cite our paper, "Compilation and Utilization of a Sorghum Transcriptome Compendium for Gene Regulatory Network Analysis and Crop Trait Engineering".
+If you use the SbCompendium package/data, please cite our paper, "Compilation and Utilization of a Sorghum Transcriptome Compendium for Gene Regulatory Network Analysis and Crop Trait Engineering". https://doi.org/10.1111/tpj.70922 
 
 If you have any questions about the datasets themselves, please email priscilla.doupnik@ag.tamu.edu.
 
@@ -32,8 +32,6 @@ This repository includes large files tracked with **Git LFS**.
   - git lfs install
 
 ## Clone the repo with LFS (command line)
-
-```sh
 git clone https://github.com/priscilla-glenn/SbCompendium.git
 
 cd SbCompendium
@@ -133,4 +131,4 @@ Experiments in the compendium include:
 - ccSM100_3*
 - temp_1and2*
 
-*These experiments do not include count data for DESeq2 analysis.
+*These experiments do not include count data for DEseq analysis

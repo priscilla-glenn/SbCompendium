@@ -140,32 +140,13 @@ Calling `plot_umap()` without color arguments displays black numeric labels and
 a legend mapping those labels to the full group names.
 
 ```{r}
-plot_umap(um2, label_type = "group", text_size = 5)
-```
+um <- run_umap_tpm(gene_expr, n_neighbors =5, seed = 10)
 
 ### Sample labels colored by group
 
-With `label_type = "sample"`, each observation is labeled with its sample-column
-name without the `_TPM` suffix. Labels are colored by their inferred group.
-
-```{r}
-plot_umap(
-  um2,
-  label_type = "sample",
-  text_size = 5
-)
-```
-
-### Points colored by group
-
-With `label_type = "color"`, samples are drawn as colored points rather than
-text labels.
-
-```{r}
-plot_umap(
-  um2,
-  label_type = "color"
-)
+plot_umap(um)
+plot_umap(um, label_type = "sample") #print the sample names on the graphs
+plot_umap(um, label_type = "color") #color codes groups instead of numeric groups
 ```
 
 
@@ -483,11 +464,11 @@ if (file.exists(heatmap_demo_file)) {
 }
 ```
 
-# Export cluster gene lists for DAVID GO term analysis
+# Export gene lists for DAVID GO term analysis
 
-Cluster gene lists can be exported in a DAVID-compatible format. 
-The following example safely writes selected clusters to the R session's
-temporary directory.
+Gene lists can be exported in a DAVID-compatible format. 
+The `export_clusters_david` function is given below commented out. 
+The output files can be accessed below
 ```{r}
 david_dir <- file.path(tempdir(), "david_clusters")
 

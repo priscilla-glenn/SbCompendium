@@ -26,13 +26,16 @@
 #' @keywords internal
 .infer_groups_from_tpm_cols <- function(tpm_cols) {
 
-    # Group name = base sample name without replicate suffix and "_TPM"
-    sample_names <- sub("([._-][0-9]+|[._-]?R[0-9]+)_TPM$", "", tpm_cols)
+    # 1) Remove ".v2" (and similar) before parsing anything else
+    clean_cols <- gsub("\\.v[0-9]+", "", tpm_cols) #TODO Update this to determine if original and redo sample is in the file, if so, keep only the redo
 
-    # Replicate id (best-effort; useful for labels)
-    rep_id <- sub("^.*([._-][0-9]+|[._-]?R[0-9]+)_TPM$", "\\1", tpm_cols)
-    rep_id <- sub("^[._-]", "", rep_id)   # drop leading separator
-    rep_id <- sub("^R", "", rep_id)       # drop leading R if present
+    # 2) Group name = base sample name without replicate suffix and "_TPM"
+    sample_names <- sub("([._-][0-9]+|[._-]?R[0-9]+)_TPM$", "", clean_cols)
+
+    # 3) Replicate id (best-effort)
+    rep_id <- sub("^.*([._-][0-9]+|[._-]?R[0-9]+)_TPM$", "\\1", clean_cols)
+    rep_id <- sub("^[._-]", "", rep_id)  # drop leading separator
+    rep_id <- sub("^R", "", rep_id)      # drop leading R if present
 
     condition <- factor(sample_names, levels = unique(sample_names))
 

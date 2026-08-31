@@ -250,6 +250,8 @@ print_umap_groups <- function(umap_obj) {
     invisible(groups)
 }
 
+#TODO Make users able to adjust the group names on the umap graph
+#TODO Work on color coding groups
 
 #' Set the order of groups in a UMAP result
 #'
@@ -303,23 +305,10 @@ set_umap_group_order <- function(umap_obj, group_order) {
 #' @return A ggplot object.
 #'
 #' @export
-#' @examples
-#' umap_df <- data.frame(
-#'   UMAP1 = c(-1, -0.8, 0.8, 1),
-#'   UMAP2 = c(0.1, -0.1, 0.2, -0.2),
-#'   sample = paste0(c("control.1", "control.2", "treated.1", "treated.2"), "_TPM"),
-#'   group = c("control", "control", "treated", "treated")
-#' )
-#'
-#' plot_umap(umap_df, label_type = "group")
-#' plot_umap(umap_df, label_type = "sample")
-#' plot_umap(umap_df, label_type = "color")
-plot_umap <- function(
-        x,
-        text_size = 5,
-        label_type = c("group", "sample", "color"),
-        theme_fn = ggplot2::theme_minimal
-) {
+plot_umap <- function(x,
+                      text_size = 5,
+                      label_type = c("group", "sample", "color"),
+                      theme_fn = ggplot2::theme_minimal) {
 
     label_type <- match.arg(label_type)
 
@@ -375,37 +364,82 @@ plot_umap <- function(
 
     p <- ggplot2::ggplot(df, ggplot2::aes(x = UMAP1, y = UMAP2))
 
-    if (label_type == "color") {
-        p <- p + ggplot2::geom_point(
-            ggplot2::aes(color = group), size = 3
-        )
-    } else {
-        p <- p + ggplot2::geom_text(
-            ggplot2::aes(label = plot_label, color = group),
-            size = text_size
-        )
-    }
+    df$plot_label <- switch(
+        label_type,
+        group = df$group_id,
+        sample = sub("_TPM$", "", df$sample),
+        none = NA_character_
+    )
 
+    if (label_type == "color") {
+
+        p <- ggplot2::ggplot(
+            df,
+            ggplot2::aes(
+                x = UMAP1,
+                y = UMAP2,
+                color = group
+            )
+        ) +
+            ggplot2::geom_point(size = 3)
+
+    } else {
+
+        p <- ggplot2::ggplot(
+            df,
+            ggplot2::aes(
+                x = UMAP1,
+                y = UMAP2,
+                label = plot_label,
+                color = group
+            )
+        ) +
+            ggplot2::geom_text(size = text_size)
+
+    }
     if (label_type == "group") {
-        p <- p +
+
+    p <- p +
             ggplot2::scale_color_manual(
-                values = stats::setNames(rep("black", length(group_levels)),
-                                         group_levels),
+                values = rep("black", length(group_levels)),
                 breaks = group_levels,
                 labels = group_levels,
                 name = "Group"
-            ) +
+            )
+
+    } else if (label_type == "color") {
+
+        # keep default ggplot colors for groups
+        p <- p +
+            ggplot2::scale_color_discrete(
+                breaks = group_levels,
+                labels = group_levels,
+                name = "Group"
+            )
+
+    }
+
+    if (label_type == "group") {
+
+        p <- p +
             ggplot2::guides(
                 color = ggplot2::guide_legend(
                     override.aes = list(label = group_map$group_id)
                 )
             )
-    } else {
-        p <- p + ggplot2::scale_color_discrete(
-            breaks = group_levels,
-            labels = group_levels,
-            name = "Group"
+
+    }
+
+    p <- p + theme_fn()
+
+    p <- p +
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(
+            plot.margin = ggplot2::margin(10, 40, 10, 10)
         )
+
+    if (label_type == "sample") {
+        p <- p + ggplot2::theme(legend.position = "color")
     }
 
     p + theme_fn() +
