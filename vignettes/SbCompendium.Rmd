@@ -34,6 +34,40 @@ This workflow covers:
 - k-means clustering of expression patterns
 - Exporting heatmap tables with optional annotations and clustering results
 
+## Compendium metadata
+
+The package includes `Compendium_meta_data_08-31-2026.xlsx`, an Excel workbook
+containing metadata for the compendium. This workbook is separate from the
+`sorghum_compendium` dataset; `data("sorghum_compendium")` does not load it.
+
+After installing SbCompendium, locate the workbook with:
+
+```{r metadata-path}
+metadata_file <- system.file(
+  "extdata", "Compendium_meta_data_08-31-2026.xlsx",
+  package = "SbCompendium", mustWork = TRUE
+)
+metadata_file
+```
+
+Open the file at this path in Excel, or read it into R using the optional
+`readxl` package. Install `readxl` once with `install.packages("readxl")` if
+needed. The following example lists the worksheets and reads the first one;
+replace `metadata_sheets[1]` with another sheet name to select a different sheet.
+
+```{r metadata-read, eval=FALSE}
+metadata_sheets <- readxl::excel_sheets(metadata_file)
+metadata_sheets
+
+sorghum_metadata <- readxl::read_excel(
+  metadata_file, sheet = metadata_sheets[1]
+)
+head(sorghum_metadata)
+```
+
+In a source checkout, the workbook is stored under `inst/extdata/`. If
+`system.file()` cannot find it, reinstall the updated package and restart R.
+
 ## Example dataset
 
 The package includes a small simulated RNA-seq dataset containing:

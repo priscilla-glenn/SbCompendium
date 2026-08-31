@@ -71,6 +71,25 @@ for example, with `sorghum_compendium$nodal_buds_28`. Use
 `list_compendium(sorghum_compendium)` to list all experiments or supply
 `pattern` to search their names.
 
+## Compendium metadata
+
+Metadata for the compendium is provided in the Excel workbook
+[Compendium_meta_data_08-31-2026.xlsx](inst/extdata/Compendium_meta_data_08-31-2026.xlsx).
+It is distributed with the package as a separate file, rather than embedded in
+`sorghum_compendium`. You can open the workbook in Excel or locate the installed
+copy from R:
+
+```r
+metadata_file <- system.file(
+  "extdata", "Compendium_meta_data_08-31-2026.xlsx",
+  package = "SbCompendium", mustWork = TRUE
+)
+metadata_file
+```
+
+See the vignette's **Compendium metadata** section for instructions on reading
+the workbook into R.
+
 # Please check the vignette and manual to see full details and usage for each function
 Experiments in the compendium include:
 
