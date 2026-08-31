@@ -9,7 +9,7 @@ If you have any bugs/questions about this R package, please open a new issue and
 ## Purpose
 This package was created to maintain the Mullet Lab Sorghum RNA-seq compendium.
 A manuscript with the meta data for each experiment is currently under review.
-There are currently 40 experiments within this R package
+There are currently 38 experiments within this R package
 
 This package allows users to analyze expression data from the RNA-seq compendium with the following functions.
 
@@ -91,44 +91,41 @@ the workbook into R.
 # Please check the vignette and manual to see full details and usage for each function
 Experiments in the compendium include:
 
-- TX08001_coreRind_34
-- cle_33
-- TX08001_highRes_32
-- nitrogen_31
-- roots_GH_water_stress_30
-- roots_field_water_stress_29
+- TX08001_coreRind_35
+- TX08001_highRes_34
+- nitrogen_33
+- roots_field_water_stress_32
+- wray_LCM_31
+- della_LCM_30
+- roots_GH_water_stress_29
 - nodal_buds_28
 - LS_removal_27
-- seedling_MLG_26
-- TX08001_density_25
-- xR07007_diurnal_24.1
-- xR07007_diurnal_24.2
-- x100M_diurnal_24.3
-- x58M_BSI_22.1
-- x100M_BSI_22.2
-- x58M_diurnal_22.3
-- tx_sas_21
-- wray_stem_dev_20
-- TX08001_radial_19
-- nroots_18
-- R07020_AER_17
-- internode_growth_16
-- SASV3_TPM_15
-- buds_14
-- DellaDevV3_13.1
-- dleaves_13.2
-- DellaDiurnalCycling_12.1
-- KellerDiurnalCycling_12.2*
-- wray_LCM_11.1
-- wray_LCM_11.2
-- Dw2dw2_10
-- SYM_9
-- DYM_8
-- DDYM_7
-- BTx623_atlas_6
-- cc100M_5
+- TX08001_density_26
+- seedling_MLG_25
+- x58M_BSI_23.1
+- x100M_BSI_23.2
+- tx_sas_22
+- wray_stem_dev_21
+- DellaDevV3_20
+- DYM_19
+- DDYM_18
+- TX08001_radial_17
+- TX08001_radial_17
+- nroots_16
+- SYM_15
+- temp_12_and_13*
+- T11_R07020_AER
+- cle_10
+- SASV3_TPM_9
+- dleaves_8
+- DellaDiurnalCycling_7.1
+- KellerDiurnalCycling_7.2*
+- Dw2dw2_6
+- internode_growth_5
 - ccBTx623_4
-- ccSM100_3*
-- temp_1and2*
+- cc100M_3.1
+- ccSM100_3.2*
+- buds_2
+- BTx623_atlas_1
 
 *These experiments do not include count data for DEseq analysis
