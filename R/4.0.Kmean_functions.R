@@ -20,7 +20,8 @@
 #' @param log_transform_if_le2 Logical. If TRUE (default), apply log2(x+1) when there are <=2 columns.
 #' @param scale_cols Logical. If TRUE, scale each sample (column) across genes (usually FALSE).
 #' @param drop_zero_var Logical. If TRUE (default), drop genes with zero variance across TPMmean columns.
-#' @param groups Description of groups
+#' @param groups Optional character vector of exactly two group-name substrings.
+#'   When supplied, only TPMmean columns containing either substring are used.
 #'
 #' @return A numeric matrix: rows = genes, cols = TPMmean samples/conditions.
 #'
@@ -474,13 +475,15 @@ run_kmeans <- function(mat,
 #' Plot median TPMmean expression per k-means cluster
 #'
 #' Uses cluster assignments from k-means but pulls TRUE TPMmean values
-#' from gene_expr (not scaled/processed matrices).
+#' from gene_expr (not scaled/processed matrices). The trailing `_TPMmean`
+#' suffix is removed automatically from displayed x-axis labels.
 #'
 #' @param gene_expr Data.frame/matrix with GeneIDV3 as rownames and includes TPMmean columns
 #' @param clusters Data.frame with GeneIDV3 and cluster assignments
 #' @param GeneIDV3_col Character. Default "GeneIDV3" may be Gene_ID
 #' @param cluster_col Character. Default "cluster"
-#' @param tpm_cols Optional vector of TPMmean columns. If NULL, uses all columns
+#' @param tpm_cols Optional character vector of TPMmean columns. If NULL,
+#'   auto-detects columns whose names end in `TPMmean`.
 #' @param log_transform Logical. Apply log2(TPMmean + 1). Default TRUE
 #' @param title Plot title
 #'
@@ -588,6 +591,9 @@ plot_cluster_median_profiles_tpm <- function(gene_expr,
             x = "Condition",
             y = ifelse(log_transform, "log2(TPMmean + 1)", "TPMmean"),
             color = "Cluster"
+        ) +
+        ggplot2::scale_x_discrete(
+            labels = function(x) sub("_TPMmean$", "", x)
         ) +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 

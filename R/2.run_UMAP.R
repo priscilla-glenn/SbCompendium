@@ -37,6 +37,26 @@
 #' @export
 #'
 #' @importFrom stats mad
+#' @examples
+#' \donttest{
+#' example_tpm <- data.frame(
+#'   GeneIDV3 = paste0("gene", 1:6),
+#'   control.1_TPM = c(8, 2, 5, 1, 9, 3),
+#'   control.2_TPM = c(7, 3, 6, 1, 8, 4),
+#'   treated.1_TPM = c(2, 8, 3, 7, 2, 9),
+#'   treated.2_TPM = c(3, 9, 2, 8, 1, 8)
+#' )
+#'
+#' um <- run_umap_tpm(
+#'   example_tpm,
+#'   n_top_genes = 5,
+#'   n_neighbors = 2,
+#'   seed = 1,
+#'   return_input = TRUE
+#' )
+#' head(um$umap_df)
+#' um$sample_table
+#' }
 run_umap_tpm <- function(df,
                          GeneIDV3_col = "GeneIDV3",
                          tpm_cols = NULL,
@@ -266,19 +286,24 @@ set_umap_group_order <- function(umap_obj, group_order) {
 }
 
 
-#' Plot UMAP results with numeric group labels and a clean legend
+#' Plot UMAP results using group labels, sample labels, or colored points
 #'
-#' Plots UMAP coordinates and labels each sample with a number representing its group.
-#' The legend shows the mapping from number -> group name (no redundant "1=" text).
+#' Displays UMAP coordinates in one of three modes selected by `label_type`:
+#' numeric group labels, sample-name labels, or colored points without text.
+#'
 #' Group order follows factor levels if `group` is a factor (e.g., after
-#' `set_umap_group_order()`); otherwise uses the order of first appearance.
+#' `set_umap_group_order()`); otherwise, it follows the order of first appearance.
 #'
 #' @param x Output from `run_umap_tpm()` (a list with `umap_df`) OR a data.frame
 #'   containing columns `UMAP1`, `UMAP2`, and `group`.
-#' @param text_size Numeric. Text size for point labels. Default 5.
-#' @param theme_fn A ggplot2 theme function. Default `ggplot2::theme_minimal`.
+#' @param text_size Numeric. Text size for group or sample labels. Default is 5.
+#' @param label_type Character. Plot mode: `"group"` uses numeric group IDs,
+#'   `"sample"` uses sample-column names without the `_TPM` suffix, and
+#'   `"color"` uses colored points without text labels.
+#' @param theme_fn A ggplot2 theme function. Default is `ggplot2::theme_minimal`.
 #'
 #' @return A ggplot object.
+#'
 #' @export
 plot_umap <- function(x,
                       text_size = 5,
@@ -291,22 +316,28 @@ plot_umap <- function(x,
         stop("Package 'ggplot2' is required.", call. = FALSE)
     }
 
-    # Accept run_umap_tpm() output or a data.frame
     if (is.list(x) && !is.null(x$umap_df)) {
         df <- x$umap_df
     } else if (is.data.frame(x)) {
         df <- x
     } else {
-        stop("x must be output from run_umap_tpm() or a data.frame.", call. = FALSE)
+        stop("x must be output from run_umap_tpm() or a data.frame.",
+             call. = FALSE)
     }
 
     if (!all(c("UMAP1", "UMAP2", "group") %in% names(df))) {
-        stop("UMAP data must contain columns 'UMAP1', 'UMAP2', and 'group'.", call. = FALSE)
+        stop("UMAP data must contain columns 'UMAP1', 'UMAP2', and 'group'.",
+             call. = FALSE)
     }
 
-    # Determine group order:
-    # - if factor: use levels (respects set_umap_group_order())
-    # - else: use order of first appearance
+    if (label_type == "sample" && !"sample" %in% names(df)) {
+        stop("UMAP data must contain a 'sample' column when label_type = 'sample'.",
+             call. = FALSE)
+    }
+
+    # ---------------------------------------------------------
+    # Group ordering (UNCHANGED)
+    # ---------------------------------------------------------
     if (is.factor(df$group)) {
         group_levels <- levels(df$group)
     } else {
@@ -319,8 +350,19 @@ plot_umap <- function(x,
         stringsAsFactors = FALSE
     )
 
-    # Map group -> numeric id WITHOUT reordering rows (avoid merge())
-    df$group_id <- group_map$group_id[match(df$group, group_map$group)]
+    df$group_id <- group_map$group_id[
+        match(df$group, group_map$group)
+    ]
+
+    df$plot_label <- if (label_type == "group") {
+        as.character(df$group_id)
+    } else if (label_type == "sample") {
+        sub("_TPM$", "", as.character(df$sample))
+    } else {
+        NA_character_
+    }
+
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = UMAP1, y = UMAP2))
 
     df$plot_label <- switch(
         label_type,
@@ -400,5 +442,7 @@ plot_umap <- function(x,
         p <- p + ggplot2::theme(legend.position = "color")
     }
 
-    return(p)
+    p + theme_fn() +
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(plot.margin = ggplot2::margin(10, 40, 10, 10))
 }

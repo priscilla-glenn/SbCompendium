@@ -13,10 +13,11 @@ Authors@R: c(
         role = "aut")
   )
 Description: Compendium of Sorghum RNAseq data.
-    Contains the functions used for DEseq, UMAP, and KMeans.
+    Contains functions used for DESeq2, UMAP, and k-means clustering.
 License: LGPL-3
 Encoding: UTF-8
 LazyData: true
+Config/build/copy-method: copy
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: 
@@ -28,8 +29,10 @@ Imports:
     DESeq2,
     S4Vectors,
     matrixStats,
+    pheatmap,
     dplyr,
     ggplot2,
+    reshape2,
     tibble,
     SummarizedExperiment,
     factoextra,

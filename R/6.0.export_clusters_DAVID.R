@@ -7,7 +7,7 @@
 #' Files are written as one gene ID per line.
 #'
 #' @param df A data.frame containing at least `GeneIDV3` and `cluster` columns
-#'   (e.g., output from `build_heatmap_cluster_export()`).
+#'   (e.g., output from `build_heatmap()`).
 #' @param clusters Integer vector of cluster numbers to export. If NULL (default),
 #'   exports all unique clusters found in `df$cluster`.
 #' @param out_dir Output directory for the text files.

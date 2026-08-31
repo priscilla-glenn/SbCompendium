@@ -29,7 +29,8 @@ prepare_kmeans_matrix_topDE_TPMmean(
 \item{tpmmean_cols}{Optional character vector of TPMmean column names to use.
 If NULL, columns are detected via \code{.get_tpmmean_cols(gene_expr)}.}
 
-\item{groups}{Description of groups}
+\item{groups}{Optional character vector of exactly two group-name substrings.
+When supplied, only TPMmean columns containing either substring are used.}
 
 \item{keep_order}{Logical. If TRUE (default), keep the gene order as it appears in top_de.}
 

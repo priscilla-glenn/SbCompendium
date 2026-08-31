@@ -29,7 +29,6 @@
 #' @param secondary_sort Character. One of:
 #'   - "GeneIDV3"
 #'   - "abs_log2FoldChange" (only if log2FoldChange exists)
-#'   - any existing column name in the output
 #'
 #' @return data.frame with GeneIDV3, optional cluster, optional FC, optional annotations,
 #'   TPMmean columns (all or group-filtered).

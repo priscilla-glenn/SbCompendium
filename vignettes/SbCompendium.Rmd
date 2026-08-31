@@ -34,6 +34,40 @@ This workflow covers:
 - k-means clustering of expression patterns
 - Exporting heatmap tables with optional annotations and clustering results
 
+## Compendium metadata
+
+The package includes `Compendium_meta_data_08-31-2026.xlsx`, an Excel workbook
+containing metadata for the compendium. This workbook is separate from the
+`sorghum_compendium` dataset; `data("sorghum_compendium")` does not load it.
+
+After installing SbCompendium, locate the workbook with:
+
+```{r metadata-path}
+metadata_file <- system.file(
+  "extdata", "Compendium_meta_data_08-31-2026.xlsx",
+  package = "SbCompendium", mustWork = TRUE
+)
+metadata_file
+```
+
+Open the file at this path in Excel, or read it into R using the optional
+`readxl` package. Install `readxl` once with `install.packages("readxl")` if
+needed. The following example lists the worksheets and reads the first one;
+replace `metadata_sheets[1]` with another sheet name to select a different sheet.
+
+```{r metadata-read, eval=FALSE}
+metadata_sheets <- readxl::excel_sheets(metadata_file)
+metadata_sheets
+
+sorghum_metadata <- readxl::read_excel(
+  metadata_file, sheet = metadata_sheets[1]
+)
+head(sorghum_metadata)
+```
+
+In a source checkout, the workbook is stored under `inst/extdata/`. If
+`system.file()` cannot find it, reinstall the updated package and restart R.
+
 ## Example dataset
 
 The package includes a small simulated RNA-seq dataset containing:
@@ -74,17 +108,47 @@ head(gene_expr)
 `run_umap_tpm` can be used to visualize sample relationships using replicate-level TPM
 expression and determine if there are any outliers.
 In this example, each of the nodal root bud groups cluster near one another. 
-We can also easily seed that group 4, node 21 only has 2 reps instead of 3
-In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes
+We can also easily see that group 4, node 21, has two replicates instead of three.
+In addition, the younger nodes (15 and 21) cluster closer to each other than the older nodes.
+
+Setting `seed` makes the layout reproducible. Here, genes must exceed a TPM of
+5 in at least one sample, and `return_input = TRUE` retains the filtered,
+gene-by-sample input matrix in the returned object.
+```{r}
+um <- run_umap_tpm(
+  gene_expr,
+  TPM_thresh = 5,
+  n_neighbors = 3,
+  seed = 20,
+  return_input = TRUE
+)
+
+# Inspect coordinates, inferred sample groups, replicate counts, and settings
+head(um$umap_df)
+um$sample_table
+um$rep_counts
+um$meta
+dim(um$input_matrix)
+
+```
+
+
+
+### Default labels
+
+Calling `plot_umap()` without color arguments displays black numeric labels and
+a legend mapping those labels to the full group names.
+
 ```{r}
 um <- run_umap_tpm(gene_expr, n_neighbors =5, seed = 10)
 
-#head(um$umap_df)
+### Sample labels colored by group
 
 plot_umap(um)
 plot_umap(um, label_type = "sample") #print the sample names on the graphs
 plot_umap(um, label_type = "color") #color codes groups instead of numeric groups
 ```
+
 
 ## Reorder Group labels if necessary
 
@@ -108,7 +172,9 @@ c(
 
 plot_umap(um2)
 ```
-lets reorder them properly now
+Let's reorder them properly and then compare the plotting options. The numeric
+labels are assigned from the reordered factor levels, so label 1 corresponds to
+Node 7, label 2 to Node 10, and so on.
 ```{r}
 um2 <- set_umap_group_order(
   um,
@@ -119,10 +185,7 @@ c(
   "TX08001_Nodal_Root_Bud_Node_21"
 )
 )
-
-plot_umap(um2)
 ```
-
 
 # Build a DESeq2 object
 
@@ -134,10 +197,10 @@ Genes can optionally be filtered using a TPM threshold.
 `dds_out` will include:
 - the DESeq2 object (dds)
 - a subset of expression values (subset_df)
-- column name helpers (tpm_cols, counts_cols)
+- column name helpers (`tpm_cols`, `count_cols`)
 - grouping information (groups, sample_names, rep_counts)
-- sample_table used in DEseq analysis
-- colData used in DEseq analysis
+- `sample_table` used in DESeq2 analysis
+- `colData` used in DESeq2 analysis
 - chosen TPM threshold (TPM_thresh)
 
 ```{r}
@@ -155,10 +218,52 @@ dds_out$rep_counts
 
 ```
 
+# Inspect samples with PCA and heatmaps
+
+The `plot_deseq_qc()` function performs a variance-stabilizing transformation
+and produces four quality-control views after the initial DESeq2 run:
+
+- a PCA with sample labels and percent variance on each axis
+- the same PCA with points only for a less crowded view
+- a sample-to-sample Pearson correlation heatmap
+- a row-scaled expression heatmap annotated by condition
+
+The function accepts the complete result from `build_deseq()` and returns the
+transformed data, plots, PCA data, and correlation matrix for further use.
+
+```{r deseq-qc-plots, fig.width=14, fig.height=10, out.width="100%"}
+qc <- plot_deseq_qc(
+  dds_out$dds,
+  intgroup = "condition",
+  blind = TRUE,
+  cor_method = "pearson",
+  heatmap_scale = "row",
+  show_rownames = FALSE,
+  cor_cellheight = 20,
+  print_plots = FALSE
+)
+
+# Inspect or reuse returned results
+head(qc$pca_data)
+qc$percent_var
+qc$cor_matrix
+
+# Reprint either PCA version as needed
+qc$pca_plot
+qc$pca_plot_points
+grid::grid.newpage()
+print(qc$correlation_heatmap)
+grid::grid.newpage()
+print(qc$expression_heatmap)
+```
+
 # Run a differential expression contrast
 
 ## A single DESeq2 contrast
 The `run_contrast()` function runs a single DESeq2 contrast between two groups of the user's choice.
+
+The `lfc_thresh` argument is on the **log2 fold-change scale**. For example,
+`lfc_thresh = 2` requires an absolute log2 fold change greater than 2.
 
 If one does not wish to cluster the results into similar expression groups, then use the results, contrast$top_de, in the `build_heatmap` function and export that dataframe using the `write_heatmap_xlsx` function
 
@@ -168,7 +273,9 @@ If one does not wish to cluster the results into similar expression groups, then
 contrast <- run_contrast(
   dds_out$dds,
   groupA = "TX08001_Nodal_Root_Bud_Node_7",
-  groupB = "TX08001_Nodal_Root_Bud_Node_21"
+  groupB = "TX08001_Nodal_Root_Bud_Node_21",
+  alpha = 0.05,
+  lfc_thresh = 2.32
 )
 
 #Top differentially expressed genes:
@@ -179,7 +286,11 @@ head(contrast$top_de)
 
 The `run_all_pairwise_contrasts()` function computes DESeq2 results for all
 pairwise comparisons among condition levels.
-This step can take a while depending on how many total constrasts it must compute
+This step can take a while depending on how many total contrasts it must compute.
+
+Unlike `run_contrast()`, `fc_thresh` is on the ordinary fold-change scale.
+For example, `fc_thresh = 3` retains changes greater than threefold in either
+direction by applying `abs(log2FoldChange) > log2(3)` internally.
 
 If one does not wish to cluster the results into similar expression groups, then use the results, pairwise$top_by_gene, in the `build_heatmap` function and export that data frame using the `write_heatmap_xlsx` function
 
@@ -225,24 +336,46 @@ mat_pairwise <- prepare_kmeans_matrix_topDE_TPMmean(
 dim(mat_pairwise)
 ```
 
+To compare expression patterns for exactly two groups, pass their exact
+TPMmean column names through `tpmmean_cols`. These names contain `Node_Phy`,
+which differs from the group names inferred from the replicate columns. With
+two TPMmean columns, the function avoids row scaling and applies `log2(x + 1)`
+by default. This prevents two-column profiles from collapsing to the same
+scaled values.
+
+```{r two-group-kmeans, eval=FALSE}
+mat_two_groups <- prepare_kmeans_matrix_topDE_TPMmean(
+  top_de = contrast$top_de,
+  gene_expr = gene_expr,
+  tpmmean_cols = c(
+    "TX08001_Nodal_Root_Bud_Node_Phy_7_TPMmean",
+    "TX08001_Nodal_Root_Bud_Node_Phy_21_TPMmean"
+  )
+)
+```
+
 ## Determine the optimal number of clusters
 
 The `evaluate_kmeans_k` function helps determine the best number of clusters
 using silhouette and WSS diagnostics.
 
-4 clusters is the optimal number in both graphs
+Four clusters is the optimal number in both graphs. The function returns its
+plots and metadata invisibly, so they can also be saved for later inspection.
 ```{r}
-evaluate_kmeans_k(mat_pairwise, k_max = 10)
+k_eval <- evaluate_kmeans_k(mat_pairwise, k_max = 10, seed = 1)
+k_eval$meta
 ```
 
 ## Run k-means clustering
 
 Once a cluster number is chosen, run k-means using the `run_kmeans` function and determine which genes are in which cluster.
 
-Then print a graph with the median expression values across the collection points for each cluster. This can either be the raw TPMmean values or log transformmed. 
+Then plot the median expression values across collection points for each cluster.
+These can be either raw TPMmean values or log-transformed values.
+The trailing `_TPMmean` suffix is removed automatically from the x-axis labels.
 
 ```{r}
-km <- run_kmeans(mat_pairwise, centers = 4)
+km <- run_kmeans(mat_pairwise, centers = 4, seed = 1)
 
 head(km$clusters)
 
@@ -267,18 +400,37 @@ The `build_heatmap` function combines:
 - gene annotations
 
 into a single table suitable for heatmap visualization.
-We will look at all nodal root buds but if we wanted to view only some, we would use:  groups = c("TX08001_Nodal_Root_Bud_Node_7", "TX08001_Nodal_Root_Bud_Node_21")
+The first example includes all TPMmean columns.
 
 ```{r}
 heatmap_df <- build_heatmap(
   gene_expr = gene_expr,
   clusters = km,
   top_de = pairwise$top_by_gene,
-  fc_cols = c( "log2FoldChange","contrast", "padj", "log2FoldChange"),
+  fc_cols = c("FC", "log2FoldChange", "contrast", "padj"),
   annot_df = example_data$Sorghum_gene_annotation
 )
 
 head(heatmap_df)
+```
+
+The `tpmmean_cols` argument can restrict the exported expression columns to two
+conditions while retaining the selected differential-expression and annotation
+columns.
+
+```{r}
+heatmap_two_groups <- build_heatmap(
+  gene_expr = gene_expr,
+  clusters = km,
+  top_de = pairwise$top_by_gene,
+  annot_df = example_data$Sorghum_gene_annotation,
+  tpmmean_cols = c(
+    "TX08001_Nodal_Root_Bud_Node_Phy_7_TPMmean",
+    "TX08001_Nodal_Root_Bud_Node_Phy_21_TPMmean"
+  )
+)
+
+head(heatmap_two_groups)
 ```
 
 ## Export heatmap dataframe
@@ -286,16 +438,17 @@ head(heatmap_df)
 The `write_heatmap_xlsx` function writes the heatmap table to Excel
 using built-in color rules for the TPMmean values.
 
-The function is given below but commented out. 
-The output file can be found in the extdata folder and details are shown below
+The write call is commented out because it requires the Python modules listed
+in the function documentation. `tempfile()` demonstrates a safe output path
+without writing into the package source directory.
 
 The heatmap Excel file contains colors and frozen panes. 
-To see these properly, open the file in Excel or LibreOffice."
+To see these properly, open the file in Excel or LibreOffice.
 ```{r}
-# write_heatmap_xlsx(
-#   heatmap_df,
-#   "heatmap_export.xlsx" #include full path to choose export folder
-# )
+xlsx_file <- tempfile(fileext = ".xlsx")
+
+# Requires pandas, xlsxwriter, and openpyxl in the configured Python environment:
+# write_heatmap_xlsx(heatmap_df, xlsx_file)
 
 # Heatmap Excel demo
 heatmap_demo_file <- system.file(
@@ -317,11 +470,16 @@ Gene lists can be exported in a DAVID-compatible format.
 The `export_clusters_david` function is given below commented out. 
 The output files can be accessed below
 ```{r}
+david_dir <- file.path(tempdir(), "david_clusters")
 
-# export_clusters_david(
-#   heatmap_df,
-#   out_dir = "inst/examples/cluster_gene_lists"
-# )
+david_files <- export_clusters_david(
+  heatmap_df,
+  clusters = c(1, 2),
+  out_dir = david_dir,
+  quiet = TRUE
+)
+
+basename(david_files)
 
 # Cluster gene list demos
 cluster_demo_dir <- system.file(

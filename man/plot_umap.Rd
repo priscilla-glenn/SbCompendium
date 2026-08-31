@@ -2,7 +2,7 @@
 % Please edit documentation in R/2.run_UMAP.R
 \name{plot_umap}
 \alias{plot_umap}
-\title{Plot UMAP results with numeric group labels and a clean legend}
+\title{Plot UMAP results using group labels, sample labels, or colored points}
 \usage{
 plot_umap(
   x,
@@ -15,16 +15,34 @@ plot_umap(
 \item{x}{Output from \code{run_umap_tpm()} (a list with \code{umap_df}) OR a data.frame
 containing columns \code{UMAP1}, \code{UMAP2}, and \code{group}.}
 
-\item{text_size}{Numeric. Text size for point labels. Default 5.}
+\item{text_size}{Numeric. Text size for group or sample labels. Default is 5.}
 
-\item{theme_fn}{A ggplot2 theme function. Default \code{ggplot2::theme_minimal}.}
+\item{label_type}{Character. Plot mode: \code{"group"} uses numeric group IDs,
+\code{"sample"} uses sample-column names without the \verb{_TPM} suffix, and
+\code{"color"} uses colored points without text labels.}
+
+\item{theme_fn}{A ggplot2 theme function. Default is \code{ggplot2::theme_minimal}.}
 }
 \value{
 A ggplot object.
 }
 \description{
-Plots UMAP coordinates and labels each sample with a number representing its group.
-The legend shows the mapping from number -> group name (no redundant "1=" text).
+Displays UMAP coordinates in one of three modes selected by \code{label_type}:
+numeric group labels, sample-name labels, or colored points without text.
+}
+\details{
 Group order follows factor levels if \code{group} is a factor (e.g., after
-\code{set_umap_group_order()}); otherwise uses the order of first appearance.
+\code{set_umap_group_order()}); otherwise, it follows the order of first appearance.
+}
+\examples{
+umap_df <- data.frame(
+  UMAP1 = c(-1, -0.8, 0.8, 1),
+  UMAP2 = c(0.1, -0.1, 0.2, -0.2),
+  sample = paste0(c("control.1", "control.2", "treated.1", "treated.2"), "_TPM"),
+  group = c("control", "control", "treated", "treated")
+)
+
+plot_umap(umap_df, label_type = "group")
+plot_umap(umap_df, label_type = "sample")
+plot_umap(umap_df, label_type = "color")
 }

@@ -23,7 +23,8 @@ plot_cluster_median_profiles_tpm(
 
 \item{cluster_col}{Character. Default "cluster"}
 
-\item{tpm_cols}{Optional vector of TPMmean columns. If NULL, uses all columns}
+\item{tpm_cols}{Optional character vector of TPMmean columns. If NULL,
+auto-detects columns whose names end in \code{TPMmean}.}
 
 \item{log_transform}{Logical. Apply log2(TPMmean + 1). Default TRUE}
 
@@ -34,5 +35,6 @@ ggplot object
 }
 \description{
 Uses cluster assignments from k-means but pulls TRUE TPMmean values
-from gene_expr (not scaled/processed matrices).
+from gene_expr (not scaled/processed matrices). The trailing \verb{_TPMmean}
+suffix is removed automatically from displayed x-axis labels.
 }
