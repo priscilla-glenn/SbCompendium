@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 )
 library(SbCompendium)
 library(reticulate)
+library(dplyr)
 ```
 
 
@@ -59,10 +60,16 @@ replace `metadata_sheets[1]` with another sheet name to select a different sheet
 metadata_sheets <- readxl::excel_sheets(metadata_file)
 metadata_sheets
 
-sorghum_metadata <- readxl::read_excel(
+table_sorghum_metadata <- readxl::read_excel(
   metadata_file, sheet = metadata_sheets[1]
 )
-head(sorghum_metadata)
+head(table_sorghum_metadata)
+
+sample_sorghum_metadata <- readxl::read_excel(
+  metadata_file, sheet = metadata_sheets[2]
+)
+sample_sorghum_metadata <- sample_sorghum_metadata[rowSums(is.na(sample_sorghum_metadata)) < ncol(sample_sorghum_metadata), ]
+head(sample_sorghum_metadata)
 ```
 
 In a source checkout, the workbook is stored under `inst/extdata/`. If
