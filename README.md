@@ -8,7 +8,6 @@ If you have any bugs/questions about this R package, please open a new issue and
 
 ## Purpose
 This package was created to maintain the Mullet Lab Sorghum RNA-seq compendium.
-A manuscript with the meta data for each experiment is currently under review.
 There are currently 38 experiments within this R package
 
 This package allows users to analyze expression data from the RNA-seq compendium with the following functions.
