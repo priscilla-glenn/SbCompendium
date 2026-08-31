@@ -17,6 +17,7 @@ Description: Compendium of Sorghum RNAseq data.
 License: LGPL-3
 Encoding: UTF-8
 LazyData: true
+Config/build/copy-method: copy
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: 
